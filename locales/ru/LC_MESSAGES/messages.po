@@ -1,0 +1,36 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Hello! I am a bot that tracks water and electricity outages. Please choose your language."
+msgstr "Здравствуйте! Я бот, который отслеживает отключения воды и электричества. Пожалуйста, выберите ваш язык."
+
+msgid "Invalid language choice."
+msgstr "Неверный выбор языка."
+
+msgid "Language has been set to {}"
+msgstr "Язык был установлен на {}"
+
+msgid "Usage: /subscribe <keyword>"
+msgstr "Использование: /subscribe <ключевое слово>"
+
+msgid "Subscription for keyword '{}' already exists. Please choose another keyword."
+msgstr "Подписка на ключевое слово '{}' уже существует. Пожалуйста, выберите другое ключевое слово."
+
+msgid "You have subscribed to notifications for the keyword '{}'."
+msgstr "Вы подписались на уведомления для ключевого слова '{}'."
+
+msgid "Usage: /unsubscribe <keyword>"
+msgstr "Использование: /unsubscribe <ключевое слово>"
+
+msgid "You have unsubscribed from notifications for the keyword '{}'."
+msgstr "Вы отписались от уведомлений для ключевого слова '{}'."
+
+msgid "You are not subscribed to notifications for the keyword '{}'."
+msgstr "Вы не подписаны на уведомления для ключевого слова '{}'."
+
+msgid "Your subscriptions:\n{}"
+msgstr "Ваши подписки:\n{}"
+
+msgid "You have no subscriptions."
+msgstr "У вас нет подписок."

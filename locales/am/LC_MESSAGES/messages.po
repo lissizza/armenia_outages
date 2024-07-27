@@ -1,0 +1,36 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Hello! I am a bot that tracks water and electricity outages. Please choose your language."
+msgstr "Բարեւ ձեզ! Ես բոտ եմ, որը հետեւում է ջրի եւ էլեկտրականության անջատումներին: Խնդրում ենք ընտրել ձեր լեզուն:"
+
+msgid "Invalid language choice."
+msgstr "Անվավեր լեզվի ընտրություն."
+
+msgid "Language has been set to {}"
+msgstr "Լեզուն սահմանվել է {}"
+
+msgid "Usage: /subscribe <keyword>"
+msgstr "Օգտագործումը: /subscribe <բանալի բառ>"
+
+msgid "Subscription for keyword '{}' already exists. Please choose another keyword."
+msgstr "Բաժանորդագրությունը '{}' բանալի բառի համար արդեն գոյություն ունի: Խնդրում ենք ընտրել այլ բանալի բառ:"
+
+msgid "You have subscribed to notifications for the keyword '{}'."
+msgstr "Դուք բաժանորդագրվել եք '{}' բանալի բառի համար ծանուցումների վրա:"
+
+msgid "Usage: /unsubscribe <keyword>"
+msgstr "Օգտագործումը: /unsubscribe <բանալի բառ>"
+
+msgid "You have unsubscribed from notifications for the keyword '{}'."
+msgstr "Դուք բաժանորդագրությունից դուրս եք եկել '{}' բանալի բառի համար ծանուցումների վրա:"
+
+msgid "You are not subscribed to notifications for the keyword '{}'."
+msgstr "Դուք բաժանորդագրված չեք '{}' բանալի բառի համար ծանուցումների վրա:"
+
+msgid "Your subscriptions:\n{}"
+msgstr "Ձեր բաժանորդագրությունները:\n{}"
+
+msgid "You have no subscriptions."
+msgstr "Դուք չունեք բաժանորդագրություններ:"
