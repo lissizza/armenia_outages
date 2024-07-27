@@ -1,36 +1,84 @@
+# en translations for Armenia Outages.
+# Copyright (C) 2024 Irina Silvestrova
+# This file is distributed under the same license as the Armenia Outages project.
+# Irina Silvestrova <silvestrova.i.a@gmail.com>, 2024.
+
 msgid ""
 msgstr ""
-"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: Armenia Outages 1.0\n"
+"Report-Msgid-Bugs-To: silvestrova.i.a@gmail.com\n"
+"POT-Creation-Date: 2024-07-27 20:21+0400\n"
+"PO-Revision-Date: 2024-07-27 20:05+0400\n"
+"Last-Translator: Irina Silvestrova <silvestrova.i.a@gmail.com>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.15.0\n"
 
-msgid "Hello! I am a bot that tracks water and electricity outages. Please choose your language."
-msgstr "Hello! I am a bot that tracks water and electricity outages. Please choose your language."
+#: handlers.py:43
+msgid ""
+"Event: {}\n"
+"Region: {}\n"
+"City: {}\n"
+"Start Time: {}\n"
+"End Time: {}\n"
+"Description: {}"
+msgstr ""
 
+#: handlers.py:63
+msgid ""
+"Hello! I am a bot that tracks water and electricity outages. Choose your "
+"language:"
+msgstr ""
+
+#: handlers.py:83
 msgid "Invalid language choice."
-msgstr "Invalid language choice."
+msgstr ""
 
+#: handlers.py:88 handlers.py:90
 msgid "Language has been set to {}"
-msgstr "Language has been set to {}"
+msgstr ""
 
+#: handlers.py:100
 msgid "Usage: /subscribe <keyword>"
-msgstr "Usage: /subscribe <keyword>"
+msgstr ""
 
-msgid "Subscription for keyword '{}' already exists. Please choose another keyword."
-msgstr "Subscription for keyword '{}' already exists. Please choose another keyword."
+#: handlers.py:107
+msgid "Keyword must be between 3 and 256 characters long."
+msgstr ""
 
-msgid "You have subscribed to notifications for the keyword '{}'."
-msgstr "You have subscribed to notifications for the keyword '{}'."
+#: handlers.py:118
+msgid ""
+"Subscription for keyword \"{}\" already exists. Please choose another "
+"keyword."
+msgstr ""
 
+#: handlers.py:131
+msgid "You have subscribed to notifications for the keyword \"{}\"."
+msgstr ""
+
+#: handlers.py:145
 msgid "Usage: /unsubscribe <keyword>"
-msgstr "Usage: /unsubscribe <keyword>"
+msgstr ""
 
-msgid "You have unsubscribed from notifications for the keyword '{}'."
-msgstr "You have unsubscribed from notifications for the keyword '{}'."
+#: handlers.py:159
+msgid "You have unsubscribed from notifications for the keyword \"{}\"."
+msgstr ""
 
-msgid "You are not subscribed to notifications for the keyword '{}'."
-msgstr "You are not subscribed to notifications for the keyword '{}'."
+#: handlers.py:165
+msgid "You are not subscribed to notifications for the keyword \"{}\"."
+msgstr ""
 
-msgid "Your subscriptions:\n{}"
-msgstr "Your subscriptions:\n{}"
+#: handlers.py:185
+msgid ""
+"Your subscriptions:\n"
+"{}"
+msgstr ""
 
+#: handlers.py:188
 msgid "You have no subscriptions."
-msgstr "You have no subscriptions."
+msgstr ""
+

@@ -32,12 +32,13 @@ async def error_handler(update: Update, context: CallbackContext) -> None:
 
 
 async def main() -> None:
-    init_db()  # Database initialization
+    init_db()
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(set_language, pattern="^set_language"))
-    application.add_handler(CommandHandler("set_language", set_language))
+    application.add_handler(
+        CallbackQueryHandler(set_language, pattern="^set_language ")
+    )
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("unsubscribe", unsubscribe))
     application.add_handler(CommandHandler("list_subscriptions", list_subscriptions))

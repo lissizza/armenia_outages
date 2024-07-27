@@ -1,60 +1,94 @@
+import os
 import gettext
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from db import Session
-from models import Event, Subscription, Language
+from models import Event, Subscription, EventType, Language
 from parser import fetch_electricity_outages, fetch_water_outages, translate_event
 
-
-languages = [lang.value for lang in Language]
+# Initialize translations
+locales_dir = os.path.join(os.path.dirname(__file__), "locales")
 translations = {}
-for lang in languages:
+for lang in [lang.value for lang in Language]:
     try:
         translations[lang] = gettext.translation(
-            "messages", localedir="locales", languages=[lang], fallback=True
+            "messages", localedir=locales_dir, languages=[lang], fallback=True
         )
     except Exception as e:
-        print(f"Error loading translation for {lang}: {e}")
+        logging.error(f"Error loading translation for {lang}: {e}")
 
 user_languages = {}
+
+
+async def check_for_updates(context: CallbackContext):
+    bot = context.bot
+    session = Session()
+
+    new_events = fetch_electricity_outages() + fetch_water_outages()
+    for event in new_events:
+        if event["type"] == EventType.WATER.value:
+            event = translate_event(event, Language.EN.value)
+        session.add(Event(**event))
+    session.commit()
+
+    subscriptions = session.query(Subscription).all()
+    for subscription in subscriptions:
+        for event in new_events:
+            if subscription.keyword.lower() in event["description"].lower():
+                translated_event = translate_event(event, subscription.language)
+                _ = translations[subscription.language].gettext
+                await bot.send_message(
+                    subscription.user_id,
+                    text=_(
+                        "Event: {}\nRegion: {}\nCity: {}\nStart Time: {}\nEnd Time: {}\nDescription: {}"
+                    ).format(
+                        translated_event["type"],
+                        translated_event["region"],
+                        translated_event["city"],
+                        translated_event["start_time"],
+                        translated_event["end_time"],
+                        translated_event["description"],
+                    ),
+                )
+
+    session.close()
 
 
 async def start(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
     user_languages[user_id] = Language.EN.value
     _ = translations[Language.EN.value].gettext
-
-    keyboard = [
-        [
-            InlineKeyboardButton("English", callback_data="set_language en"),
-            InlineKeyboardButton("Русский", callback_data="set_language ru"),
-            InlineKeyboardButton("Հայերեն", callback_data="set_language am"),
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
     await update.message.reply_text(
         _(
-            "Hello! I am a bot that tracks water and electricity outages. Please choose your language."
+            "Hello! I am a bot that tracks water and electricity outages. Choose your language:"
         ),
-        reply_markup=reply_markup,
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("English", callback_data="set_language en")],
+                [InlineKeyboardButton("Русский", callback_data="set_language ru")],
+                [InlineKeyboardButton("Հայերեն", callback_data="set_language am")],
+            ]
+        ),
     )
 
 
 async def set_language(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
-    await query.answer()
     user_id = query.from_user.id
+    language_code = query.data.split()[-1]
 
-    lang_code = query.data.split()[1]
-    if lang_code not in translations:
+    if language_code not in [lang.value for lang in Language]:
         _ = translations[user_languages.get(user_id, Language.EN.value)].gettext
-        await query.edit_message_text(_("Invalid language choice."))
+        await query.answer(_("Invalid language choice."))
         return
 
-    user_languages[user_id] = lang_code
+    user_languages[user_id] = language_code
     _ = translations[user_languages[user_id]].gettext
-    await query.edit_message_text(_("Language has been set to {}").format(lang_code))
+    await query.answer(_("Language has been set to {}").format(language_code))
+    await query.edit_message_text(
+        _("Language has been set to {}").format(language_code)
+    )
 
 
 async def subscribe(update: Update, context: CallbackContext) -> None:
@@ -67,6 +101,12 @@ async def subscribe(update: Update, context: CallbackContext) -> None:
         return
 
     keyword = context.args[0]
+
+    if not (3 <= len(keyword) <= 256):
+        await update.message.reply_text(
+            _("Keyword must be between 3 and 256 characters long.")
+        )
+        return
 
     session = Session()
     existing_subscription = (
@@ -146,29 +186,5 @@ async def list_subscriptions(update: Update, context: CallbackContext) -> None:
         )
     else:
         await update.message.reply_text(_("You have no subscriptions."))
-
-    session.close()
-
-
-async def check_for_updates(context: CallbackContext):
-    bot = context.bot
-    session = Session()
-    new_events = fetch_electricity_outages(Language.RU.value) + fetch_water_outages()
-
-    for event in new_events:
-        if event["language"] != Language.AM.value:
-            translated_event = translate_event(event, Language.AM.value)
-            session.add(Event(**translated_event))
-    session.commit()
-
-    subscriptions = session.query(Subscription).all()
-    for subscription in subscriptions:
-        for event in new_events:
-            if subscription.keyword.lower() in event["description"].lower():
-                translated_event = translate_event(event, subscription.language)
-                await bot.send_message(
-                    subscription.user_id,
-                    text=f"Subscription: {subscription.keyword}\n{translated_event}",
-                )
 
     session.close()
