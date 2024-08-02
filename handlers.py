@@ -4,13 +4,12 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from db import Session
-from models import Event, Subscription, EventType, Language
-from parser import fetch_electricity_outages, fetch_water_outages, translate_event
+from models import Subscription, Language
 
 # Initialize translations
 locales_dir = os.path.join(os.path.dirname(__file__), "locales")
 translations = {}
-for lang in [lang.value for lang in Language]:
+for lang in [lang.value[0] for lang in Language]:
     try:
         translations[lang] = gettext.translation(
             "messages", localedir=locales_dir, languages=[lang], fallback=True
@@ -21,44 +20,10 @@ for lang in [lang.value for lang in Language]:
 user_languages = {}
 
 
-async def check_for_updates(context: CallbackContext):
-    bot = context.bot
-    session = Session()
-
-    new_events = fetch_electricity_outages() + fetch_water_outages()
-    for event in new_events:
-        if event["type"] == EventType.WATER.value:
-            event = translate_event(event, Language.EN.value)
-        session.add(Event(**event))
-    session.commit()
-
-    subscriptions = session.query(Subscription).all()
-    for subscription in subscriptions:
-        for event in new_events:
-            if subscription.keyword.lower() in event["description"].lower():
-                translated_event = translate_event(event, subscription.language)
-                _ = translations[subscription.language].gettext
-                await bot.send_message(
-                    subscription.user_id,
-                    text=_(
-                        "Event: {}\nRegion: {}\nCity: {}\nStart Time: {}\nEnd Time: {}\nDescription: {}"
-                    ).format(
-                        translated_event["type"],
-                        translated_event["region"],
-                        translated_event["city"],
-                        translated_event["start_time"],
-                        translated_event["end_time"],
-                        translated_event["description"],
-                    ),
-                )
-
-    session.close()
-
-
 async def start(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    user_languages[user_id] = Language.EN.value
-    _ = translations[Language.EN.value].gettext
+    user_languages[user_id] = Language.EN.value[0]
+    _ = translations[Language.EN.value[0]].gettext
     await update.message.reply_text(
         _(
             "Hello! I am a bot that tracks water and electricity outages. Choose your language:"
@@ -78,8 +43,8 @@ async def set_language(update: Update, context: CallbackContext) -> None:
     user_id = query.from_user.id
     language_code = query.data.split()[-1]
 
-    if language_code not in [lang.value for lang in Language]:
-        _ = translations[user_languages.get(user_id, Language.EN.value)].gettext
+    if language_code not in [lang.value[0] for lang in Language]:
+        _ = translations[user_languages.get(user_id, Language.EN.value[0])].gettext
         await query.answer(_("Invalid language choice."))
         return
 
@@ -93,7 +58,7 @@ async def set_language(update: Update, context: CallbackContext) -> None:
 
 async def subscribe(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    user_language = user_languages.get(user_id, Language.EN.value)
+    user_language = user_languages.get(user_id, Language.EN.value[0])
     _ = translations[user_language].gettext
 
     if len(context.args) < 1:
@@ -138,7 +103,7 @@ async def subscribe(update: Update, context: CallbackContext) -> None:
 
 async def unsubscribe(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    user_language = user_languages.get(user_id, Language.EN.value)
+    user_language = user_languages.get(user_id, Language.EN.value[0])
     _ = translations[user_language].gettext
 
     if len(context.args) < 1:
@@ -172,7 +137,7 @@ async def unsubscribe(update: Update, context: CallbackContext) -> None:
 
 async def list_subscriptions(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    user_language = user_languages.get(user_id, Language.EN.value)
+    user_language = user_languages.get(user_id, Language.EN.value[0])
     _ = translations[user_language].gettext
 
     session = Session()
