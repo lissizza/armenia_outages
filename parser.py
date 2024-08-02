@@ -1,5 +1,6 @@
 import time
 import logging
+import hashlib
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -8,14 +9,14 @@ from models import Event, LastPage, EventType, Language
 from config import CHROMEDRIVER_PATH, ELECTRICITY_OUTAGE_URL
 from db import Session
 
+# Initialize WebDriver
 options = webdriver.ChromeOptions()
 options.add_argument("--headless")
 service = Service(CHROMEDRIVER_PATH)
 driver = webdriver.Chrome(service=service, options=options)
 
-logging.basicConfig(level=logging.INFO)
 
-
+# Save the last page number parsed
 def save_last_page(language, planned, page_number):
     session = Session()
     last_page = (
@@ -32,6 +33,7 @@ def save_last_page(language, planned, page_number):
     session.close()
 
 
+# Load the last page number parsed
 def load_last_page(language, planned):
     session = Session()
     last_page = (
@@ -43,6 +45,7 @@ def load_last_page(language, planned):
     return 1
 
 
+# Parse the HTML table
 def parse_table():
     html = driver.page_source
     soup = BeautifulSoup(html, "html.parser")
@@ -59,6 +62,7 @@ def parse_table():
     return data
 
 
+# Split the address into area, district, and house number
 def split_address(address):
     parts = address.split(",")
     if len(parts) == 1:
@@ -76,6 +80,17 @@ def split_address(address):
     return area, None, right_part if right_part.isdigit() else None
 
 
+# Compute a hash for the event
+def compute_hash(
+    event_type, area, district, house_number, start_time, language, planned
+):
+    hash_input = f"{event_type}{area}{district}{house_number}{start_time}{language}{planned}".encode(
+        "utf-8"
+    )
+    return hashlib.md5(hash_input).hexdigest()
+
+
+# Parse all pages and save events
 def parse_all_pages(event_type, planned, language):
     last_page_number = load_last_page(language, planned)
     logging.info(f"Last page number: {last_page_number}")
@@ -100,6 +115,15 @@ def parse_all_pages(event_type, planned, language):
         session = Session()
         for event in data:
             area, district, house_number = split_address(event[1])
+            event_hash = compute_hash(
+                event_type, area, district, house_number, event[0], language, planned
+            )
+
+            # Check if the event already exists
+            existing_event = session.query(Event).filter_by(hash=event_hash).first()
+            if existing_event:
+                continue  # Skip this event, it's already in the database
+
             new_event = Event(
                 event_type=event_type,
                 area=area,
@@ -109,6 +133,7 @@ def parse_all_pages(event_type, planned, language):
                 end_time=None,
                 language=language,
                 planned=planned,
+                hash=event_hash,
             )
             session.add(new_event)
         session.commit()
@@ -129,6 +154,7 @@ def parse_all_pages(event_type, planned, language):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     for language in Language:
         parse_all_pages(EventType.ELECTRICITY, planned=False, language=language)
 
