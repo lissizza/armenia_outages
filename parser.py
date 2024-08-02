@@ -1,6 +1,5 @@
 import time
 import logging
-import hashlib
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -8,6 +7,7 @@ from bs4 import BeautifulSoup
 from models import Event, LastPage, EventType, Language
 from config import CHROMEDRIVER_PATH, ELECTRICITY_OUTAGE_URL
 from db import Session
+from utils import compute_hash
 
 # Initialize WebDriver
 options = webdriver.ChromeOptions()
@@ -80,32 +80,15 @@ def split_address(address):
     return area, None, right_part if right_part.isdigit() else None
 
 
-# Compute a hash for the event
-def compute_hash(
-    event_type, area, district, house_number, start_time, language, planned
-):
-    hash_input = f"{event_type}{area}{district}{house_number}{start_time}{language}{planned}".encode(
-        "utf-8"
-    )
-    return hashlib.md5(hash_input).hexdigest()
-
-
 # Parse all pages and save events
 def parse_all_pages(event_type, planned, language):
-    last_page_number = load_last_page(language, planned)
+    last_page_number = 1  # Always start from the first page
     logging.info(f"Last page number: {last_page_number}")
     logging.info(f"Language: {language}")
     driver.get(ELECTRICITY_OUTAGE_URL.format(lang=language.code))
     logging.info(f"URL: {ELECTRICITY_OUTAGE_URL.format(lang=language.code)}")
 
-    for _ in range(last_page_number - 1):
-        try:
-            next_button = driver.find_element(By.CSS_SELECTOR, "a.paginate_button.next")
-            next_button.click()
-            time.sleep(2)
-        except Exception as e:
-            logging.error(f"Error navigating to the page {last_page_number}: {e}")
-            return
+    new_records_count = 0
 
     while True:
         data = parse_table()
@@ -136,7 +119,10 @@ def parse_all_pages(event_type, planned, language):
                 hash=event_hash,
             )
             session.add(new_event)
+            new_records_count += 1
+
         session.commit()
+        session.close()
 
         try:
             next_button = driver.find_element(By.CSS_SELECTOR, "a.paginate_button.next")
@@ -150,7 +136,9 @@ def parse_all_pages(event_type, planned, language):
             logging.error(f"Error navigating to next page: {e}")
             break
 
-        session.close()
+    logging.info(
+        f"Added {new_records_count} new records to the database for language {language}."
+    )
 
 
 if __name__ == "__main__":
