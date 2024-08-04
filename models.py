@@ -1,8 +1,6 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Enum, UniqueConstraint, Boolean
+from db import Base
 from enum import Enum as PyEnum
-
-Base = declarative_base()
 
 
 class EventType(PyEnum):
@@ -32,6 +30,8 @@ class Event(Base):
     language = Column(Enum(Language))
     planned = Column(Integer)
     hash = Column(String, unique=True)
+    timestamp = Column(String)
+    sent = Column(Boolean, default=False)
 
     __table_args__ = (UniqueConstraint("hash", name="_event_hash_uc"),)
 

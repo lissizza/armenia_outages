@@ -17,18 +17,19 @@ from handlers import (
     subscribe,
     list_subscriptions,
     unsubscribe,
-    check_for_updates,
 )
+from tasks import check_for_updates
 
 nest_asyncio.apply()
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
+logger = logging.getLogger(__name__)
 
 
 async def error_handler(update: Update, context: CallbackContext) -> None:
-    logging.error(msg="Exception while handling an update:", exc_info=context.error)
+    logger.error(msg="Exception while handling an update:", exc_info=context.error)
 
 
 async def main() -> None:
@@ -44,21 +45,24 @@ async def main() -> None:
     application.add_handler(CommandHandler("list_subscriptions", list_subscriptions))
 
     job_queue = application.job_queue
-    job_queue.run_repeating(check_for_updates, interval=3600, first=0)
+    job_queue.run_repeating(check_for_updates, interval=3600, first=3600)
 
     application.add_error_handler(error_handler)
 
-    logging.info("Bot started and ready to receive commands")
+    logger.info("Bot started and ready to receive commands")
 
     await application.initialize()
     await application.start()
     await application.updater.start_polling()
 
+    context = CallbackContext(application)
+    asyncio.create_task(check_for_updates(context))
+
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
     def _signal_handler(sig):
-        logging.info(f"Received exit signal {sig.name}...")
+        logger.info(f"Received exit signal {sig.name}...")
         stop_event.set()
 
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -66,11 +70,11 @@ async def main() -> None:
 
     await stop_event.wait()
 
-    logging.info("Stopping application...")
+    logger.info("Stopping application...")
     await application.updater.stop()
     await application.stop()
     await application.shutdown()
-    logging.info("Application stopped gracefully")
+    logger.info("Application stopped gracefully")
 
 
 if __name__ == "__main__":

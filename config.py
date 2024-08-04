@@ -9,6 +9,7 @@ CHROMEDRIVER_PATH = os.getenv(
     "CHROMEDRIVER_PATH",
     os.path.expanduser("~/chromedriver/chromedriver-linux64/chromedriver"),
 )
+CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 # URLs for parsing
 ELECTRICITY_OUTAGE_URL = "https://www.ena.am/Info.aspx?id=5&lang={lang}"
