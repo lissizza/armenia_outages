@@ -215,20 +215,49 @@ def process_emergency_power_events():
         )
 
         for event in unprocessed_emergency_power_events:
-            processed_event = ProcessedEvent(
-                start_time=event.start_time,
-                area=event.area,
-                district=event.district,
-                house_numbers=event.house_numbers,
-                language=event.language,
-                event_type=event.event_type,
-                planned=False,
-                sent=False,
-                timestamp=datetime.now().isoformat(),
+            # Check if the processed event already exists
+            existing_processed_event = (
+                session.query(ProcessedEvent)
+                .filter_by(
+                    start_time=event.start_time,
+                    area=event.area,
+                    district=event.district,
+                    language=event.language,
+                    event_type=event.event_type,
+                    planned=False,
+                )
+                .first()
             )
-            session.add(processed_event)
-            session.commit()
 
+            if existing_processed_event:
+                # Update the existing event
+                existing_processed_event.house_numbers = ", ".join(
+                    sorted(
+                        set(
+                            existing_processed_event.house_numbers.split(", ")
+                            + event.house_numbers.split(", ")
+                        )
+                    )
+                )
+                existing_processed_event.timestamp = datetime.now().isoformat()
+                session.commit()
+            else:
+                # Insert a new processed event
+                processed_event = ProcessedEvent(
+                    start_time=event.start_time,
+                    area=event.area,
+                    district=event.district,
+                    house_numbers=event.house_numbers,
+                    language=event.language,
+                    event_type=event.event_type,
+                    planned=False,
+                    sent=False,
+                    timestamp=datetime.now().isoformat(),
+                )
+                session.add(processed_event)
+                session.commit()
+
+            # Mark the original event as processed
             session.query(Event).filter(Event.id == event.id).update(
                 {"processed": True}
             )
