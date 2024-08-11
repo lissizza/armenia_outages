@@ -14,7 +14,12 @@ CHANNEL_ID_AM = os.getenv("CHANNEL_ID_AM")
 CHANNEL_ID_RU = os.getenv("CHANNEL_ID_RU")
 CHANNEL_ID_EN = os.getenv("CHANNEL_ID_EN")
 
-
 # URLs for parsing
 POWER_OUTAGE_URL = "https://www.ena.am/Info.aspx?id=5&lang={lang}"
 WATER_OUTAGE_URL = "https://interactive.vjur.am/"
+
+# Scheduling intervals and first run times
+CHECK_FOR_UPDATES_INTERVAL = int(os.getenv("CHECK_FOR_UPDATES_INTERVAL", 3600))
+POST_UPDATES_INTERVAL = int(os.getenv("POST_UPDATES_INTERVAL", 3600))
+CHECK_FOR_UPDATES_FIRST = int(os.getenv("CHECK_FOR_UPDATES_FIRST", 5))
+POST_UPDATES_FIRST = int(os.getenv("POST_UPDATES_FIRST", 180))

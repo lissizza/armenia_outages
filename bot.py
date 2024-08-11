@@ -20,6 +20,12 @@ from handlers import (
     unsubscribe,
 )
 from tasks import check_for_updates, post_updates
+from config import (
+    CHECK_FOR_UPDATES_INTERVAL,
+    POST_UPDATES_INTERVAL,
+    CHECK_FOR_UPDATES_FIRST,
+    POST_UPDATES_FIRST,
+)
 
 nest_asyncio.apply()
 
@@ -54,8 +60,14 @@ async def main() -> None:
 
     job_queue = application.job_queue
 
-    job_queue.run_repeating(check_for_updates, interval=180, first=5)
-    job_queue.run_repeating(post_updates, interval=180, first=90)
+    job_queue.run_repeating(
+        check_for_updates,
+        interval=CHECK_FOR_UPDATES_INTERVAL,
+        first=CHECK_FOR_UPDATES_FIRST,
+    )
+    job_queue.run_repeating(
+        post_updates, interval=POST_UPDATES_INTERVAL, first=POST_UPDATES_FIRST
+    )
 
     application.add_error_handler(error_handler)
 
