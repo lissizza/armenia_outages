@@ -8,7 +8,7 @@ from sqlalchemy import func
 from telegram.ext import CallbackContext
 from telegram.error import RetryAfter
 from parsers.power_parser import parse_all_pages
-from parsers.water_parser import parse_and_save_water_events
+from parsers.water_parser import parse_and_save_water_events, translate_text
 from models import EventType, Language, Event, ProcessedEvent
 from db import Session
 from config import CHANNEL_ID_AM, CHANNEL_ID_RU, CHANNEL_ID_EN, REDIS_URL
@@ -270,35 +270,67 @@ def process_unplanned_power_events(session):
 def process_water_events(session):
     """
     Process water events by directly transferring them from the events table
-    to the processed_events table without aggregation. Marks the original events as processed.
+    to the processed_events table, including translation for RU and EN.
+    Marks the original events as processed.
     """
     unprocessed_water_events = (
         session.query(Event)
         .filter(
             Event.processed == 0,
             Event.event_type == EventType.WATER,
+            Event.language == Language.AM,
         )
         .all()
     )
 
     for event in unprocessed_water_events:
-        logger.info(f"Processing water event ID {event.id} with text: {event.text}")
+        # Translate the text
+        translation_ru, translation_en = translate_text(event.text)
 
-        processed_event = ProcessedEvent(
+        # Create processed events for all three languages
+        processed_event_am = ProcessedEvent(
             start_time=event.start_time,
             area=event.area,
             district=event.district,
             house_numbers=event.house_number,
-            language=event.language,
+            language=Language.AM,
             event_type=event.event_type,
             planned=event.planned,
             sent=False,
             timestamp=datetime.now().isoformat(),
-            text=event.text if event.text else "",
+            text=event.text,
+        )
+
+        processed_event_ru = ProcessedEvent(
+            start_time=event.start_time,
+            area=event.area,
+            district=event.district,
+            house_numbers=event.house_number,
+            language=Language.RU,
+            event_type=event.event_type,
+            planned=event.planned,
+            sent=False,
+            timestamp=datetime.now().isoformat(),
+            text=translation_ru,
+        )
+
+        processed_event_en = ProcessedEvent(
+            start_time=event.start_time,
+            area=event.area,
+            district=event.district,
+            house_numbers=event.house_number,
+            language=Language.EN,
+            event_type=event.event_type,
+            planned=event.planned,
+            sent=False,
+            timestamp=datetime.now().isoformat(),
+            text=translation_en,
         )
 
         try:
-            session.add(processed_event)
+            session.add_all(
+                [processed_event_am, processed_event_ru, processed_event_en]
+            )
             session.commit()
 
             event.processed = True
