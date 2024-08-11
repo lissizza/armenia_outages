@@ -8,11 +8,13 @@ from sqlalchemy import func
 from telegram.ext import CallbackContext
 from telegram.error import RetryAfter
 from parsers.power_parser import parse_emergency_power_events
-from parsers.water_parser import parse_and_save_water_events, translate_text
+from parsers.water_parser import parse_and_save_water_events
 from models import EventType, Language, Event, ProcessedEvent
 from db import Session
 from config import CHANNEL_ID_AM, CHANNEL_ID_RU, CHANNEL_ID_EN, REDIS_URL
 import redis
+
+from utils import translate_text
 
 # Configurable delay between messages
 MESSAGE_DELAY = 2  # seconds
