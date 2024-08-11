@@ -1,15 +1,15 @@
-# en translations for Armenia Outages.
-# Copyright (C) 2024 Irina Silvestrova
-# This file is distributed under the same license as the Armenia Outages project.
-# Irina Silvestrova <silvestrova.i.a@gmail.com>, 2024.
-
+# English translations for PROJECT.
+# Copyright (C) 2024 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Armenia Outages 1.0\n"
-"Report-Msgid-Bugs-To: silvestrova.i.a@gmail.com\n"
-"POT-Creation-Date: 2024-07-27 20:21+0400\n"
-"PO-Revision-Date: 2024-07-27 20:05+0400\n"
-"Last-Translator: Irina Silvestrova <silvestrova.i.a@gmail.com>\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2024-08-11 12:37+0400\n"
+"PO-Revision-Date: 2024-08-07 13:00+0400\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
 "Language-Team: en <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
@@ -18,67 +18,105 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.15.0\n"
 
-#: handlers.py:43
+#: handlers.py:28
 msgid ""
-"Event: {}\n"
-"Region: {}\n"
-"City: {}\n"
-"Start Time: {}\n"
-"End Time: {}\n"
-"Description: {}"
-msgstr ""
-
-#: handlers.py:63
-msgid ""
-"Hello! I am a bot that tracks water and electricity outages. Choose your "
+"Hello! I am a bot that tracks water and power outages. Choose your "
 "language:"
 msgstr ""
 
-#: handlers.py:83
+#: handlers.py:48
 msgid "Invalid language choice."
 msgstr ""
 
-#: handlers.py:88 handlers.py:90
+#: handlers.py:53 handlers.py:55
 msgid "Language has been set to {}"
 msgstr ""
 
-#: handlers.py:100
+#: handlers.py:65
 msgid "Usage: /subscribe <keyword>"
 msgstr ""
 
-#: handlers.py:107
+#: handlers.py:72
 msgid "Keyword must be between 3 and 256 characters long."
 msgstr ""
 
-#: handlers.py:118
+#: handlers.py:83
 msgid ""
 "Subscription for keyword \"{}\" already exists. Please choose another "
 "keyword."
 msgstr ""
 
-#: handlers.py:131
+#: handlers.py:96
 msgid "You have subscribed to notifications for the keyword \"{}\"."
 msgstr ""
 
-#: handlers.py:145
+#: handlers.py:110
 msgid "Usage: /unsubscribe <keyword>"
 msgstr ""
 
-#: handlers.py:159
+#: handlers.py:124
 msgid "You have unsubscribed from notifications for the keyword \"{}\"."
 msgstr ""
 
-#: handlers.py:165
+#: handlers.py:130
 msgid "You are not subscribed to notifications for the keyword \"{}\"."
 msgstr ""
 
-#: handlers.py:185
+#: handlers.py:150
 msgid ""
 "Your subscriptions:\n"
 "{}"
 msgstr ""
 
-#: handlers.py:188
+#: handlers.py:153
 msgid "You have no subscriptions."
+msgstr ""
+
+#: tasks.py:55
+msgid "Scheduled water outage"
+msgstr ""
+
+#: tasks.py:57
+msgid "Emergency water outage"
+msgstr ""
+
+#: tasks.py:60
+msgid "Scheduled power outage"
+msgstr ""
+
+#: tasks.py:62
+msgid "Emergency power outage"
+msgstr ""
+
+#: tasks.py:65
+msgid "Scheduled gas outage"
+msgstr ""
+
+#: tasks.py:67
+msgid "Emergency gas outage"
+msgstr ""
+
+#: tasks.py:73
+msgid "Area: {}\n"
+msgstr ""
+
+#: tasks.py:75
+msgid "District: {}\n"
+msgstr ""
+
+#: tasks.py:77
+msgid "House Numbers: {}\n"
+msgstr ""
+
+#: tasks.py:79
+msgid "Start Time: {}\n"
+msgstr ""
+
+#: tasks.py:81
+msgid "End Time: {}\n"
+msgstr ""
+
+#: tasks.py:83
+msgid "Details: {}\n"
 msgstr ""
 

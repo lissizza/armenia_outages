@@ -2,6 +2,7 @@ import signal
 import nest_asyncio
 import logging
 import asyncio
+import httpx
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -18,7 +19,7 @@ from handlers import (
     list_subscriptions,
     unsubscribe,
 )
-from tasks import check_for_updates
+from tasks import check_for_updates, post_updates
 
 nest_asyncio.apply()
 
@@ -34,7 +35,14 @@ async def error_handler(update: Update, context: CallbackContext) -> None:
 
 async def main() -> None:
     init_db()
+    # Configure the HTTPX client
+    limits = httpx.Limits(max_keepalive_connections=50, max_connections=100)
+    timeout = httpx.Timeout(20.0)
+
+    httpx_client = httpx.AsyncClient(limits=limits, timeout=timeout)
+
     application = Application.builder().token(TOKEN).build()
+    application.bot._httpx_client = httpx_client
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(
@@ -45,7 +53,9 @@ async def main() -> None:
     application.add_handler(CommandHandler("list_subscriptions", list_subscriptions))
 
     job_queue = application.job_queue
-    job_queue.run_repeating(check_for_updates, interval=3600, first=3600)
+
+    job_queue.run_repeating(check_for_updates, interval=180, first=5)
+    job_queue.run_repeating(post_updates, interval=180, first=90)
 
     application.add_error_handler(error_handler)
 
@@ -54,9 +64,6 @@ async def main() -> None:
     await application.initialize()
     await application.start()
     await application.updater.start_polling()
-
-    context = CallbackContext(application)
-    asyncio.create_task(check_for_updates(context))
 
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
@@ -74,6 +81,7 @@ async def main() -> None:
     await application.updater.stop()
     await application.stop()
     await application.shutdown()
+    await httpx_client.aclose()
     logger.info("Application stopped gracefully")
 
 

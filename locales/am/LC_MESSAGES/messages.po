@@ -1,93 +1,130 @@
-# am translations for Armenia Outages.
-# Copyright (C) 2024 Irina Silvestrova
-# This file is distributed under the same license as the Armenia Outages project.
-# Irina Silvestrova <silvestrova.i.a@gmail.com>, 2024.
-
+# Armenian translations for PROJECT.
+# Copyright (C) 2024 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Armenia Outages 1.0\n"
-"Report-Msgid-Bugs-To: silvestrova.i.a@gmail.com\n"
-"POT-Creation-Date: 2024-07-27 20:21+0400\n"
-"PO-Revision-Date: 2024-07-27 20:05+0400\n"
-"Last-Translator: Irina Silvestrova <silvestrova.i.a@gmail.com>\n"
-"Language: am\n"
-"Language-Team: am <LL@li.org>\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2024-08-11 12:37+0400\n"
+"PO-Revision-Date: 2024-08-07 13:00+0400\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: hy\n"
+"Language-Team: hy <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.15.0\n"
 
-#: handlers.py:43
+#: handlers.py:28
 msgid ""
-"Event: {}\n"
-"Region: {}\n"
-"City: {}\n"
-"Start Time: {}\n"
-"End Time: {}\n"
-"Description: {}"
-msgstr ""
-"Միջոցառումը: {}\n"
-"Տարածաշրջան: {}\n"
-"Քաղաք: {}\n"
-"Սկիզբի ժամանակը: {}\n"
-"Ավարտի ժամանակը: {}\n"
-"Նկարագրությունը: {}"
-
-#: handlers.py:63
-msgid ""
-"Hello! I am a bot that tracks water and electricity outages. Choose your "
+"Hello! I am a bot that tracks water and power outages. Choose your "
 "language:"
 msgstr ""
-"Բարեւ Ձեզ! Ես բոտ եմ, որը հետեւում է ջրի եւ էլեկտրաէներգիայի անջատումներին: Ընտրեք ձեր լեզուն:"
+"Բարև՛ Ձեզ։ Ես բոտ եմ, որը հետևում է ջրի և էլեկտրաէներգիայի անջատումներին։"
+" Ընտրեք ձեր լեզուն՝"
+
+#: handlers.py:48
+msgid "Invalid language choice."
+msgstr "Անվավեր լեզվի ընտրություն։"
+
+#: handlers.py:53 handlers.py:55
+msgid "Language has been set to {}"
+msgstr "Լեզուն տեղադրված է՝ {}"
+
+#: handlers.py:65
+msgid "Usage: /subscribe <keyword>"
+msgstr "Օգտագործում՝ /subscribe <բանալի բառ>"
+
+#: handlers.py:72
+msgid "Keyword must be between 3 and 256 characters long."
+msgstr "Բանալի բառը պետք է լինի 3-ից 256 նիշ երկարությամբ։"
 
 #: handlers.py:83
-msgid "Invalid language choice."
-msgstr "Անվավեր լեզվի ընտրություն:"
-
-#: handlers.py:88 handlers.py:90
-msgid "Language has been set to {}"
-msgstr "Լեզուն ընտրվել է {}"
-
-#: handlers.py:100
-msgid "Usage: /subscribe <keyword>"
-msgstr "Օգտագործումը: /subscribe <բառ>"
-
-#: handlers.py:107
-msgid "Keyword must be between 3 and 256 characters long."
-msgstr "Բառը պետք է լինի 3-ից 256 նիշ երկարությամբ:"
-
-#: handlers.py:118
 msgid ""
 "Subscription for keyword \"{}\" already exists. Please choose another "
 "keyword."
 msgstr ""
-"Բառի համար \"{}\" բաժանորդագրությունը արդեն գոյություն ունի: Խնդրում ենք ընտրել մեկ այլ բառ:"
+"Բանալի բառի «{}» բաժանորդագրությունը արդեն առկա է։ Խնդրում ենք ընտրել այլ"
+" բանալի բառ։"
 
-#: handlers.py:131
+#: handlers.py:96
 msgid "You have subscribed to notifications for the keyword \"{}\"."
-msgstr "Դուք բաժանորդագրվել եք \"{}\" բառի համար ծանուցումների համար:"
+msgstr "Դուք բաժանորդագրվել եք «{}» բանալի բառով ծանուցումներին։"
 
-#: handlers.py:145
+#: handlers.py:110
 msgid "Usage: /unsubscribe <keyword>"
-msgstr "Օգտագործումը: /unsubscribe <բառ>"
+msgstr "Օգտագործում՝ /unsubscribe <բանալի բառ>"
 
-#: handlers.py:159
+#: handlers.py:124
 msgid "You have unsubscribed from notifications for the keyword \"{}\"."
-msgstr "Դուք բաժանորդագրությունը դադարեցրել եք \"{}\" բառի ծանուցումների համար:"
+msgstr "Դուք դադարեցրել եք «{}» բանալի բառով ծանուցումները։"
 
-#: handlers.py:165
+#: handlers.py:130
 msgid "You are not subscribed to notifications for the keyword \"{}\"."
-msgstr "Դուք բաժանորդագրված չեք \"{}\" բառի ծանուցումների համար:"
+msgstr "Դուք բաժանորդագրված չեք «{}» բանալի բառով ծանուցումներին։"
 
-#: handlers.py:185
+#: handlers.py:150
 msgid ""
 "Your subscriptions:\n"
 "{}"
 msgstr ""
-"Ձեր բաժանորդագրությունները:\n"
+"Ձեր բաժանորդագրությունները՝\n"
 "{}"
 
-#: handlers.py:188
+#: handlers.py:153
 msgid "You have no subscriptions."
-msgstr "Դուք չունեք բաժանորդագրություններ:"
+msgstr "Դուք չունեք բաժանորդագրություններ։"
+
+#: tasks.py:55
+msgid "Scheduled water outage"
+msgstr "Պլանային ջրի անջատում"
+
+#: tasks.py:57
+msgid "Emergency water outage"
+msgstr "Վթարային ջրի անջատում"
+
+#: tasks.py:60
+msgid "Scheduled power outage"
+msgstr "Պլանային էլեկտրաէներգիայի անջատում"
+
+#: tasks.py:62
+msgid "Emergency power outage"
+msgstr "Վթարային էլեկտրաէներգիայի անջատում"
+
+#: tasks.py:65
+#, fuzzy
+msgid "Scheduled gas outage"
+msgstr "Պլանային ջրի անջատում"
+
+#: tasks.py:67
+#, fuzzy
+msgid "Emergency gas outage"
+msgstr "Վթարային ջրի անջատում"
+
+#: tasks.py:73
+msgid "Area: {}\n"
+msgstr "Տարածք: {}\n"
+
+#: tasks.py:75
+msgid "District: {}\n"
+msgstr "Շրջան: {}\n"
+
+#: tasks.py:77
+msgid "House Numbers: {}\n"
+msgstr "Տների համարներ: {}\n"
+
+#: tasks.py:79
+msgid "Start Time: {}\n"
+msgstr "Սկսման ժամանակը: {}\n"
+
+#: tasks.py:81
+msgid "End Time: {}\n"
+msgstr "Ավարտի ժամանակը: {}\n"
+
+#: tasks.py:83
+msgid "Details: {}\n"
+msgstr "Մանրամասներ: {}\n"
+

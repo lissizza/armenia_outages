@@ -26,7 +26,7 @@ async def start(update: Update, context: CallbackContext) -> None:
     _ = translations[Language.EN.value[0]].gettext
     await update.message.reply_text(
         _(
-            "Hello! I am a bot that tracks water and electricity outages. Choose your language:"
+            "Hello! I am a bot that tracks water and power outages. Choose your language:"
         ),
         reply_markup=InlineKeyboardMarkup(
             [

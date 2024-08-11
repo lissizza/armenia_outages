@@ -1,15 +1,15 @@
-# ru translations for Armenia Outages.
-# Copyright (C) 2024 Irina Silvestrova
-# This file is distributed under the same license as the Armenia Outages project.
-# Irina Silvestrova <silvestrova.i.a@gmail.com>, 2024.
-
+# Russian translations for PROJECT.
+# Copyright (C) 2024 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Armenia Outages 1.0\n"
-"Report-Msgid-Bugs-To: silvestrova.i.a@gmail.com\n"
-"POT-Creation-Date: 2024-07-27 20:21+0400\n"
-"PO-Revision-Date: 2024-07-27 20:05+0400\n"
-"Last-Translator: Irina Silvestrova <silvestrova.i.a@gmail.com>\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2024-08-11 12:37+0400\n"
+"PO-Revision-Date: 2024-08-07 13:00+0400\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
 "Language-Team: ru <LL@li.org>\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
@@ -19,69 +19,55 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.15.0\n"
 
-#: handlers.py:43
+#: handlers.py:28
 msgid ""
-"Event: {}\n"
-"Region: {}\n"
-"City: {}\n"
-"Start Time: {}\n"
-"End Time: {}\n"
-"Description: {}"
-msgstr ""
-"Событие: {}\n"
-"Регион: {}\n"
-"Город: {}\n"
-"Время начала: {}\n"
-"Время окончания: {}\n"
-"Описание: {}"
-
-#: handlers.py:63
-msgid ""
-"Hello! I am a bot that tracks water and electricity outages. Choose your "
+"Hello! I am a bot that tracks water and power outages. Choose your "
 "language:"
 msgstr ""
-"Здравствуйте! Я бот, который отслеживает отключения воды и электричества. Выберите свой язык:"
+"Привет! Я бот, который отслеживает отключения воды и электричества. "
+"Выберите ваш язык:"
 
-#: handlers.py:83
+#: handlers.py:48
 msgid "Invalid language choice."
-msgstr "Неверный выбор языка."
+msgstr "Недопустимый выбор языка."
 
-#: handlers.py:88 handlers.py:90
+#: handlers.py:53 handlers.py:55
 msgid "Language has been set to {}"
-msgstr "Язык был установлен на {}"
+msgstr "Язык установлен на {}"
 
-#: handlers.py:100
+#: handlers.py:65
 msgid "Usage: /subscribe <keyword>"
 msgstr "Использование: /subscribe <ключевое слово>"
 
-#: handlers.py:107
+#: handlers.py:72
 msgid "Keyword must be between 3 and 256 characters long."
-msgstr "Ключевое слово должно быть длиной от 3 до 256 символов."
+msgstr "Ключевое слово должно содержать от 3 до 256 символов."
 
-#: handlers.py:118
+#: handlers.py:83
 msgid ""
 "Subscription for keyword \"{}\" already exists. Please choose another "
 "keyword."
 msgstr ""
-"Подписка на ключевое слово \"{}\" уже существует. Пожалуйста, выберите другое ключевое слово."
+"Подписка на ключевое слово \"{}\" уже существует. Пожалуйста, выберите "
+"другое ключевое слово."
 
-#: handlers.py:131
+#: handlers.py:96
 msgid "You have subscribed to notifications for the keyword \"{}\"."
 msgstr "Вы подписались на уведомления по ключевому слову \"{}\"."
 
-#: handlers.py:145
+#: handlers.py:110
 msgid "Usage: /unsubscribe <keyword>"
 msgstr "Использование: /unsubscribe <ключевое слово>"
 
-#: handlers.py:159
+#: handlers.py:124
 msgid "You have unsubscribed from notifications for the keyword \"{}\"."
 msgstr "Вы отписались от уведомлений по ключевому слову \"{}\"."
 
-#: handlers.py:165
+#: handlers.py:130
 msgid "You are not subscribed to notifications for the keyword \"{}\"."
 msgstr "Вы не подписаны на уведомления по ключевому слову \"{}\"."
 
-#: handlers.py:185
+#: handlers.py:150
 msgid ""
 "Your subscriptions:\n"
 "{}"
@@ -89,6 +75,57 @@ msgstr ""
 "Ваши подписки:\n"
 "{}"
 
-#: handlers.py:188
+#: handlers.py:153
 msgid "You have no subscriptions."
 msgstr "У вас нет подписок."
+
+#: tasks.py:55
+msgid "Scheduled water outage"
+msgstr "Плановое отключение воды"
+
+#: tasks.py:57
+msgid "Emergency water outage"
+msgstr "Аварийное отключение воды"
+
+#: tasks.py:60
+msgid "Scheduled power outage"
+msgstr "Плановое отключение электричества"
+
+#: tasks.py:62
+msgid "Emergency power outage"
+msgstr "Аварийное отключение электричества"
+
+#: tasks.py:65
+#, fuzzy
+msgid "Scheduled gas outage"
+msgstr "Плановое отключение воды"
+
+#: tasks.py:67
+#, fuzzy
+msgid "Emergency gas outage"
+msgstr "Аварийное отключение воды"
+
+#: tasks.py:73
+msgid "Area: {}\n"
+msgstr "Область: {}\n"
+
+#: tasks.py:75
+msgid "District: {}\n"
+msgstr "Район: {}\n"
+
+#: tasks.py:77
+msgid "House Numbers: {}\n"
+msgstr "Номера домов: {}\n"
+
+#: tasks.py:79
+msgid "Start Time: {}\n"
+msgstr "Время начала: {}\n"
+
+#: tasks.py:81
+msgid "End Time: {}\n"
+msgstr "Время конца: {}\n"
+
+#: tasks.py:83
+msgid "Details: {}\n"
+msgstr "Подробности: {}\n"
+
