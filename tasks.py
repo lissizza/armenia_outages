@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from telegram.ext import CallbackContext
 from telegram.error import RetryAfter
-from parsers.power_parser import parse_all_pages
+from parsers.power_parser import parse_emergency_power_events
 from parsers.water_parser import parse_and_save_water_events, translate_text
 from models import EventType, Language, Event, ProcessedEvent
 from db import Session
@@ -169,7 +169,9 @@ async def check_for_updates(context: CallbackContext) -> None:
     try:
         for language in Language:
             logger.info(f"Parsing power updates for language: {language.name}")
-            parse_all_pages(EventType.POWER, planned=False, language=language)
+            parse_emergency_power_events(
+                EventType.POWER, planned=False, language=language
+            )
 
         logger.info("Parsing water updates")
         parse_and_save_water_events()
@@ -180,12 +182,12 @@ async def check_for_updates(context: CallbackContext) -> None:
         logger.error(f"Error while checking for updates: {e}")
 
 
-def process_unplanned_power_events(session):
+def process_emergency_power_events(session):
     """
-    Aggregate unplanned power events by combining house numbers for events with the same
+    Aggregate emergency power events by combining house numbers for events with the same
     start time, area, district, language, and event type. Marks the original events as processed.
     """
-    unprocessed_unplanned_power_events = (
+    unprocessed_emergency_power_events = (
         session.query(
             Event.start_time,
             Event.area,
@@ -212,7 +214,7 @@ def process_unplanned_power_events(session):
         .all()
     )
 
-    for event in unprocessed_unplanned_power_events:
+    for event in unprocessed_emergency_power_events:
         processed_event = ProcessedEvent(
             start_time=event.start_time,
             area=event.area,
@@ -345,17 +347,14 @@ def process_water_events(session):
 
 def update_processed_events():
     """
-    Update the processed events by aggregating unplanned power events
+    Update the processed events by aggregating emergency power events
     and directly processing water events.
     """
     session = Session()
     try:
         logger.info("Updating processed events...")
 
-        # Process unplanned power events
-        process_unplanned_power_events(session)
-
-        # Process water events
+        process_emergency_power_events(session)
         process_water_events(session)
 
         logger.info("Processed events updated successfully.")

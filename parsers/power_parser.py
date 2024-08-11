@@ -83,10 +83,18 @@ def filter_by_date(event_date_str):
         return False
 
 
-# Пример функции из парсера
+def parse_emergency_power_events(event_type, planned, language):
+    """
+    Parse all pages of power outages data for a specific event type, planned status, and language.
 
+    Args:
+        event_type (str): The type of event to parse.
+        planned (bool): The planned status of the outages.
+        language (str): The language code for the data.
 
-def parse_all_pages(event_type, planned, language):
+    Returns:
+        None: If there is an error starting or restarting the WebDriver.
+    """
     driver = None
     try:
         driver = start_webdriver()
@@ -184,4 +192,4 @@ def parse_all_pages(event_type, planned, language):
 
 if __name__ == "__main__":
     for language in Language:
-        parse_all_pages(EventType.POWER, planned=False, language=language)
+        parse_emergency_power_events(EventType.POWER, planned=False, language=language)
