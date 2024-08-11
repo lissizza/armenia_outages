@@ -3,7 +3,7 @@ import nest_asyncio
 import logging
 import asyncio
 import httpx
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -30,13 +30,23 @@ from config import (
 nest_asyncio.apply()
 
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
 
 async def error_handler(update: Update, context: CallbackContext) -> None:
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
+
+
+async def set_commands(application):
+    commands = [
+        BotCommand("start", "Start the bot"),
+        BotCommand("subscribe", "Subscribe to notifications"),
+        BotCommand("unsubscribe", "Unsubscribe from notifications"),
+        BotCommand("list_subscriptions", "List your current subscriptions"),
+    ]
+    await application.bot.set_my_commands(commands)
 
 
 async def main() -> None:
@@ -49,6 +59,9 @@ async def main() -> None:
 
     application = Application.builder().token(TOKEN).build()
     application.bot._httpx_client = httpx_client
+
+    # Set the bot commands
+    await set_commands(application)
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(

@@ -162,3 +162,6 @@ cython_debug/
 #.idea/
 
 events.db
+
+combined_code.txt
+combine_code.py

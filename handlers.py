@@ -6,6 +6,9 @@ from telegram.ext import CallbackContext
 from db import Session
 from models import Subscription, Language
 
+logger = logging.getLogger(__name__)
+
+
 # Initialize translations
 locales_dir = os.path.join(os.path.dirname(__file__), "locales")
 translations = {}
@@ -15,7 +18,7 @@ for lang in [lang.value[0] for lang in Language]:
             "messages", localedir=locales_dir, languages=[lang], fallback=True
         )
     except Exception as e:
-        logging.error(f"Error loading translation for {lang}: {e}")
+        logger.error(f"Error loading translation for {lang}: {e}")
 
 user_languages = {}
 

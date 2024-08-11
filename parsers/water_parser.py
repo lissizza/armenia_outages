@@ -8,9 +8,6 @@ from utils import compute_hash_by_text
 from parsers.webdriver_utils import start_webdriver, restart_webdriver
 from urllib3.exceptions import NewConnectionError, MaxRetryError
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 

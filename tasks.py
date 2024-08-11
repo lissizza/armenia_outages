@@ -19,9 +19,6 @@ from utils import translate_text
 # Configurable delay between messages
 MESSAGE_DELAY = 2  # seconds
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 redis_client = redis.StrictRedis.from_url(REDIS_URL)

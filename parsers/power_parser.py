@@ -11,7 +11,7 @@ from urllib3.exceptions import NewConnectionError, MaxRetryError
 from parsers.webdriver_utils import start_webdriver, restart_webdriver
 from datetime import timedelta
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def parse_table(driver):
@@ -19,7 +19,7 @@ def parse_table(driver):
     soup = BeautifulSoup(html, "html.parser")
     table = soup.find("table", {"id": "ctl00_ContentPlaceHolder1_vtarayin"})
     if table is None:
-        logging.error("Could not find the table on the page.")
+        logger.error("Could not find the table on the page.")
         return []
     rows = table.find("tbody").find_all("tr")
     data = []
@@ -72,20 +72,20 @@ def parse_emergency_power_events(event_type, planned, language):
     try:
         driver = start_webdriver()
     except (NewConnectionError, MaxRetryError) as e:
-        logging.error(f"Failed to start WebDriver: {e}")
+        logger.error(f"Failed to start WebDriver: {e}")
         try:
             driver = restart_webdriver()
         except (NewConnectionError, MaxRetryError) as e:
-            logging.error(f"Failed to restart WebDriver: {e}")
+            logger.error(f"Failed to restart WebDriver: {e}")
             return  # If both start and restart fail, exit the function
 
     if driver is None:
-        logging.error("WebDriver is not initialized.")
+        logger.error("WebDriver is not initialized.")
         return
 
     try:
         driver.get(POWER_OUTAGE_URL.format(lang=language.code))
-        logging.info(f"URL: {POWER_OUTAGE_URL.format(lang=language.code)}")
+        logger.info(f"URL: {POWER_OUTAGE_URL.format(lang=language.code)}")
 
         new_records_count = 0
 
@@ -146,15 +146,15 @@ def parse_emergency_power_events(event_type, planned, language):
                 next_button.click()
                 time.sleep(0.5)  # Wait for the next page to load
             except Exception as e:
-                logging.error(f"Error navigating to next page: {e}")
+                logger.error(f"Error navigating to next page: {e}")
                 break
 
-        logging.info(
+        logger.info(
             f"Added {new_records_count} new records to the database for language {language}."
         )
 
     except Exception as e:
-        logging.error(f"Error during parsing: {e}")
+        logger.error(f"Error during parsing: {e}")
     finally:
         driver.quit()
 
