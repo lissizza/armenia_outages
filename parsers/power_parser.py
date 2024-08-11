@@ -2,7 +2,7 @@ import time
 import logging
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
-from models import Event, LastPage, EventType, Language
+from models import Event, EventType, Language
 from config import POWER_OUTAGE_URL
 from db import Session
 from utils import compute_hash, normalize_string
@@ -12,33 +12,6 @@ from parsers.webdriver_utils import start_webdriver, restart_webdriver
 from datetime import timedelta
 
 logging.basicConfig(level=logging.INFO)
-
-
-def save_last_page(language, planned, page_number):
-    session = Session()
-    last_page = (
-        session.query(LastPage).filter_by(language=language, planned=planned).first()
-    )
-    if last_page:
-        last_page.page_number = page_number
-    else:
-        last_page = LastPage(
-            page_number=page_number, language=language, planned=planned
-        )
-        session.add(last_page)
-    session.commit()
-    session.close()
-
-
-def load_last_page(language, planned):
-    session = Session()
-    last_page = (
-        session.query(LastPage).filter_by(language=language, planned=planned).first()
-    )
-    session.close()
-    if last_page:
-        return last_page.page_number
-    return 1
 
 
 def parse_table(driver):
@@ -110,8 +83,6 @@ def parse_emergency_power_events(event_type, planned, language):
         logging.error("WebDriver is not initialized.")
         return
 
-    last_page_number = 1  # Always start from the first page
-    logging.info(f"Language: {language}")
     try:
         driver.get(POWER_OUTAGE_URL.format(lang=language.code))
         logging.info(f"URL: {POWER_OUTAGE_URL.format(lang=language.code)}")
@@ -174,8 +145,6 @@ def parse_emergency_power_events(event_type, planned, language):
                     break
                 next_button.click()
                 time.sleep(0.5)  # Wait for the next page to load
-                last_page_number += 1
-                save_last_page(language, planned, last_page_number)
             except Exception as e:
                 logging.error(f"Error navigating to next page: {e}")
                 break

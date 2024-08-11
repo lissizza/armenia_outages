@@ -8,7 +8,7 @@ from sqlalchemy import func
 from telegram.ext import CallbackContext
 from telegram.error import RetryAfter
 from parsers.power_parser import parse_emergency_power_events
-from parsers.water_parser import parse_and_save_water_events
+from parsers.water_parser import parse_water_events
 from models import EventType, Language, Event, ProcessedEvent
 from db import Session
 from config import CHANNEL_ID_AM, CHANNEL_ID_RU, CHANNEL_ID_EN, REDIS_URL
@@ -168,115 +168,89 @@ async def post_updates(context: CallbackContext) -> None:
 async def check_for_updates(context: CallbackContext) -> None:
     """Function to check for updates and process new events"""
     logger.info("Checking for updates...")
-    try:
-        for language in Language:
-            logger.info(f"Parsing power updates for language: {language.name}")
-            parse_emergency_power_events(
-                EventType.POWER, planned=False, language=language
-            )
+    for language in Language:
+        logger.info(f"Parsing emergency power updates for language: {language.name}")
+        parse_emergency_power_events(EventType.POWER, planned=False, language=language)
 
-        logger.info("Parsing water updates")
-        parse_and_save_water_events()
+    logger.info("Processing emergency power events...")
+    process_emergency_power_events()
 
-        update_processed_events()
+    logger.info("Parsing water updates")
+    parse_water_events()
 
-    except Exception as e:
-        logger.error(f"Error while checking for updates: {e}")
+    logger.info("Processing water events...")
+    process_water_events()
 
 
-def process_emergency_power_events(session):
+def process_emergency_power_events():
     """
     Aggregate emergency power events by combining house numbers for events with the same
     start time, area, district, language, and event type. Marks the original events as processed.
     """
-    unprocessed_emergency_power_events = (
-        session.query(
-            Event.start_time,
-            Event.area,
-            Event.district,
-            Event.language,
-            Event.event_type,
-            func.group_concat(Event.house_number, ", ").label("house_numbers"),
-        )
-        .filter(
-            Event.processed == 0,
-            Event.event_type == EventType.POWER,
-            Event.planned == 0,
-            (Event.area.isnot(None))
-            | (Event.district.isnot(None))
-            | (Event.house_number.isnot(None)),
-        )
-        .group_by(
-            Event.start_time,
-            Event.area,
-            Event.district,
-            Event.language,
-            Event.event_type,
-        )
-        .all()
-    )
-
-    for event in unprocessed_emergency_power_events:
-        processed_event = ProcessedEvent(
-            start_time=event.start_time,
-            area=event.area,
-            district=event.district,
-            house_numbers=event.house_numbers,
-            language=event.language,
-            event_type=event.event_type,
-            planned=False,
-            sent=False,
-            timestamp=datetime.now().isoformat(),
+    session = Session()
+    try:
+        unprocessed_emergency_power_events = (
+            session.query(
+                Event.id,
+                Event.start_time,
+                Event.area,
+                Event.district,
+                Event.language,
+                Event.event_type,
+                func.group_concat(Event.house_number, ", ").label("house_numbers"),
+            )
+            .filter(
+                Event.processed == 0,
+                Event.event_type == EventType.POWER,
+                Event.planned == 0,
+                (Event.area.isnot(None))
+                | (Event.district.isnot(None))
+                | (Event.house_number.isnot(None)),
+            )
+            .group_by(
+                Event.start_time,
+                Event.area,
+                Event.district,
+                Event.language,
+                Event.event_type,
+            )
+            .all()
         )
 
-        try:
+        for event in unprocessed_emergency_power_events:
+            processed_event = ProcessedEvent(
+                start_time=event.start_time,
+                area=event.area,
+                district=event.district,
+                house_numbers=event.house_numbers,
+                language=event.language,
+                event_type=event.event_type,
+                planned=False,
+                sent=False,
+                timestamp=datetime.now().isoformat(),
+            )
             session.add(processed_event)
-            event.processed = True
             session.commit()
 
-        except IntegrityError:
-            session.rollback()
-            existing_event = (
-                session.query(ProcessedEvent)
-                .filter_by(
-                    start_time=event.start_time,
-                    area=event.area,
-                    district=event.district,
-                    language=event.language,
-                    event_type=event.event_type,
-                    planned=False,
-                )
-                .first()
+            session.query(Event).filter(Event.id == event.id).update(
+                {"processed": True}
             )
+            session.commit()
 
-            if existing_event:
-                existing_event.house_numbers = ", ".join(
-                    sorted(
-                        set(
-                            filter(None, existing_event.house_numbers.split(", "))
-                            + filter(None, event.house_numbers.split(", "))
-                        )
-                    )
-                )
-                existing_event.sent = False
-                existing_event.timestamp = datetime.now().isoformat()
-                session.commit()
-
-                event.processed = True
-                session.commit()
-        else:
-            logger.error(
-                f"Expected existing event not found after IntegrityError for "
-                f"{event.start_time}, {event.area}, {event.district}, {event.language}, {event.event_type}"
-            )
+    except IntegrityError as e:
+        session.rollback()
+        logger.error(f"IntegrityError: {e}")
+    finally:
+        session.close()
 
 
-def process_water_events(session):
+def process_water_events():
     """
     Process water events by directly transferring them from the events table
     to the processed_events table, including translation for RU and EN.
     Marks the original events as processed.
     """
+    session = Session()
     unprocessed_water_events = (
         session.query(Event)
         .filter(
@@ -345,24 +319,4 @@ def process_water_events(session):
             logger.error(
                 f"Failed to insert water event {event.id} due to IntegrityError"
             )
-
-
-def update_processed_events():
-    """
-    Update the processed events by aggregating emergency power events
-    and directly processing water events.
-    """
-    session = Session()
-    try:
-        logger.info("Updating processed events...")
-
-        process_emergency_power_events(session)
-        process_water_events(session)
-
-        logger.info("Processed events updated successfully.")
-
-    except Exception as e:
-        logger.error(f"Failed to update processed events: {e}")
-        session.rollback()
-    finally:
-        session.close()
+    session.close()

@@ -48,14 +48,6 @@ class Subscription(Base):
     language = Column(Enum(Language))
 
 
-class LastPage(Base):
-    __tablename__ = "last_page"
-    id = Column(Integer, primary_key=True)
-    page_number = Column(Integer)
-    language = Column(Enum(Language))
-    planned = Column(Integer)
-
-
 class ProcessedEvent(Base):
     __tablename__ = "processed_events"
 

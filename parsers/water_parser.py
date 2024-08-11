@@ -14,7 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def parse_and_save_water_events():
+def parse_water_events():
     driver = start_webdriver()
     if not driver:
         logger.error("Failed to start WebDriver.")
@@ -89,4 +89,4 @@ def parse_and_save_water_events():
 
 
 if __name__ == "__main__":
-    parse_and_save_water_events()
+    parse_water_events()
