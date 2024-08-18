@@ -7,116 +7,116 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-11 12:37+0400\n"
+"POT-Creation-Date: 2024-08-18 13:06+0400\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
 "Language-Team: en <LL@li.org>\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.15.0\n"
+"Generated-By: Babel 2.8.0\n"
 
-#: handlers.py:28
+#: handlers.py:31
 msgid ""
 "Hello! I am a bot that tracks water and power outages. Choose your "
 "language:"
 msgstr ""
 
-#: handlers.py:48
+#: handlers.py:51
 msgid "Invalid language choice."
 msgstr ""
 
-#: handlers.py:53 handlers.py:55
+#: handlers.py:56 handlers.py:58
 msgid "Language has been set to {}"
 msgstr ""
 
-#: handlers.py:65
+#: handlers.py:68
 msgid "Usage: /subscribe <keyword>"
 msgstr ""
 
-#: handlers.py:72
+#: handlers.py:75
 msgid "Keyword must be between 3 and 256 characters long."
 msgstr ""
 
-#: handlers.py:83
+#: handlers.py:86
 msgid ""
 "Subscription for keyword \"{}\" already exists. Please choose another "
 "keyword."
 msgstr ""
 
-#: handlers.py:96
+#: handlers.py:99
 msgid "You have subscribed to notifications for the keyword \"{}\"."
 msgstr ""
 
-#: handlers.py:110
+#: handlers.py:113
 msgid "Usage: /unsubscribe <keyword>"
 msgstr ""
 
-#: handlers.py:124
+#: handlers.py:127
 msgid "You have unsubscribed from notifications for the keyword \"{}\"."
 msgstr ""
 
-#: handlers.py:130
+#: handlers.py:133
 msgid "You are not subscribed to notifications for the keyword \"{}\"."
 msgstr ""
 
-#: handlers.py:150
+#: handlers.py:153
 msgid ""
 "Your subscriptions:\n"
 "{}"
 msgstr ""
 
-#: handlers.py:153
+#: handlers.py:156
 msgid "You have no subscriptions."
 msgstr ""
 
-#: tasks.py:55
+#: tasks.py:53
 msgid "Scheduled water outage"
 msgstr ""
 
-#: tasks.py:57
+#: tasks.py:53
 msgid "Emergency water outage"
 msgstr ""
 
-#: tasks.py:60
+#: tasks.py:55
 msgid "Scheduled power outage"
 msgstr ""
 
-#: tasks.py:62
+#: tasks.py:55
 msgid "Emergency power outage"
 msgstr ""
 
-#: tasks.py:65
+#: tasks.py:57
 msgid "Scheduled gas outage"
 msgstr ""
 
-#: tasks.py:67
+#: tasks.py:57
 msgid "Emergency gas outage"
 msgstr ""
 
-#: tasks.py:73
-msgid "Area: {}\n"
-msgstr ""
-
-#: tasks.py:75
-msgid "District: {}\n"
-msgstr ""
-
-#: tasks.py:77
+#: tasks.py:65
 msgid "House Numbers: {}\n"
 msgstr ""
 
-#: tasks.py:79
+#: tasks.py:80
+msgid "Area: {}\n"
+msgstr ""
+
+#: tasks.py:82
+msgid "District: {}\n"
+msgstr ""
+
+#: tasks.py:86
 msgid "Start Time: {}\n"
 msgstr ""
 
-#: tasks.py:81
+#: tasks.py:88
 msgid "End Time: {}\n"
 msgstr ""
 
-#: tasks.py:83
+#: tasks.py:90
 msgid "Details: {}\n"
 msgstr ""
 

@@ -69,6 +69,11 @@ class ProcessedEvent(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "start_time", "area", "district", "language", name="_unique_agg_event"
+            "start_time",
+            "area",
+            "district",
+            "event_type",
+            "language",
+            name="_unique_agg_event",
         ),
     )

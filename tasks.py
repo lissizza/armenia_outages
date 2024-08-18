@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import logging
 import asyncio
 import gettext
@@ -42,38 +43,45 @@ def get_channel_id(language):
     return None
 
 
+def generate_title(event_type, planned, language):
+    """Generate the title for a message based on the event type and language."""
+    translation = translations[language.value[0]]
+    translation.install()
+    _ = translation.gettext
+
+    if event_type == EventType.WATER:
+        title = _("Scheduled water outage") if planned else _("Emergency water outage")
+    elif event_type == EventType.POWER:
+        title = _("Scheduled power outage") if planned else _("Emergency power outage")
+    elif event_type == EventType.GAS:
+        title = _("Scheduled gas outage") if planned else _("Emergency gas outage")
+
+    return f"**{title}**\n"
+
+
+def generate_house_numbers_section(house_numbers, _):
+    """Helper function to generate the house numbers section."""
+    if house_numbers:
+        return _("House Numbers: {}\n").format(house_numbers)
+    return ""
+
+
 def generate_message(event):
-    """Function to generate a message from a processed event"""
+    """Функция для генерации сообщения из обработанного события"""
     lang_code = event.language.value[0]
     translation = translations[lang_code]
     translation.install()
     _ = translation.gettext
 
-    if event.event_type == EventType.WATER:
-        if event.planned:
-            title = _("Scheduled water outage")
-        else:
-            title = _("Emergency water outage")
-    elif event.event_type == EventType.POWER:
-        if event.planned:
-            title = _("Scheduled power outage")
-        else:
-            title = _("Emergency power outage")
-    elif event.event_type == EventType.GAS:
-        if event.planned:
-            title = _("Scheduled gas outage")
-        else:
-            title = _("Emergency gas outage")
-
-    title = f"**{title}**\n"
+    title = generate_title(event.event_type, event.planned, event.language)
 
     details = ""
     if event.area:
         details += _("Area: {}\n").format(event.area)
     if event.district:
         details += _("District: {}\n").format(event.district)
-    if event.house_numbers:
-        details += _("House Numbers: {}\n").format(event.house_numbers)
+    details += generate_house_numbers_section(event.house_numbers, _)
+
     if event.start_time:
         details += _("Start Time: {}\n").format(event.start_time)
     if event.end_time:
@@ -81,18 +89,26 @@ def generate_message(event):
     if event.text:
         details += _("Details: {}\n").format(event.text)
 
-    return f"{title}{details}"
+    # Создаем словарь с правильными ключами
+    message_info = {"event_ids": [event.id], "text": f"{title}{details}"}
+
+    return message_info
 
 
 async def send_message(context, delay):
     """Function to send messages from the Redis queue"""
     while True:
-        event_id = redis_client.lpop("event_queue")
-        if event_id is None:
+        event_data = redis_client.lpop("event_queue")
+        if event_data is None:
             await asyncio.sleep(delay)
             continue
 
-        event_id = int(event_id.decode("utf-8"))
+        try:
+            message_info = json.loads(event_data.decode("utf-8"))
+            event_id = message_info.get("event_id")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode event data: {e}")
+            continue
 
         session = Session()
         try:
@@ -105,7 +121,7 @@ async def send_message(context, delay):
                 logger.info(f"Event {event_id} has already been sent. Skipping.")
                 continue
 
-            message = generate_message(event)
+            message = message_info.get("message")
             channel_id = get_channel_id(event.language)
 
             if channel_id:
@@ -126,12 +142,12 @@ async def send_message(context, delay):
                     )
                     await asyncio.sleep(retry_after)
                     if not event.sent:
-                        redis_client.lpush("event_queue", event_id)
+                        redis_client.rpush("event_queue", json.dumps(message_info))
                 except Exception as e:
                     logger.error(
                         f"Failed to send message for processed event {event.id}: {e}"
                     )
-                    redis_client.lpush("event_queue", event_id)
+                    redis_client.rpush("event_queue", json.dumps(message_info))
             else:
                 logger.error(f"Invalid language for processed event {event.id}")
         except Exception as e:
@@ -141,25 +157,177 @@ async def send_message(context, delay):
             await asyncio.sleep(delay)
 
 
+def generate_grouped_messages(events):
+    """Generate grouped messages by area and start_time from a list of processed events"""
+    if not events:
+        return []
+
+    first_event = events[0]
+    lang_code = first_event.language.value[0]
+    translation = translations[lang_code]
+    translation.install()
+    _ = translation.gettext
+
+    grouped_events = {}
+    for event in events:
+        group_key = (event.area, event.start_time)
+        if group_key not in grouped_events:
+            grouped_events[group_key] = []
+        grouped_events[group_key].append(event)
+
+    messages = []
+    for (area, start_time), events in grouped_events.items():
+        title = generate_title(
+            events[0].event_type, events[0].planned, events[0].language
+        )
+        current_message = {
+            "text": f"**{title}**\n**{area}**\n**{start_time}**\n\n",
+            "event_ids": [event.id for event in events],
+        }
+        sorted_events = sorted(events, key=lambda e: e.district or "")
+
+        for event in sorted_events:
+            if event.district:
+                event_message = f"{event.district}\n{generate_house_numbers_section(event.house_numbers, _)}\n\n"
+            else:
+                event_message = (
+                    f"{generate_house_numbers_section(event.house_numbers, _)}\n\n"
+                )
+
+            if len(current_message["text"]) + len(event_message) > 4096:
+                messages.append(current_message)
+                current_message = {
+                    "text": f"**{title}**\n**{area}**\n**{start_time}**\n\n"
+                    + event_message,
+                    "event_ids": [event.id],
+                }
+            else:
+                current_message["text"] += event_message
+                current_message["event_ids"].append(event.id)
+
+        if current_message["text"]:
+            messages.append(current_message)
+
+    return messages
+
+
+async def send_grouped_messages(context, delay):
+    """Function to send grouped messages by area from the Redis queue"""
+    while True:
+        message_info = redis_client.lpop("event_queue")
+        if not message_info:
+            await asyncio.sleep(delay)
+            continue
+
+        try:
+            message_info = json.loads(message_info.decode("utf-8"))
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode JSON from message_info: {e}")
+            continue
+
+        if not isinstance(message_info, dict):
+            logger.error(
+                f"Invalid format for message_info, expected a dictionary: {message_info}"
+            )
+            continue
+
+        # Используем правильные ключи
+        event_ids = message_info.get("event_ids")
+        text = message_info.get("text")
+
+        if not event_ids or not text:
+            logger.error(
+                f"Invalid message_info received: event_ids={event_ids}, text={text}. Full message_info: {message_info}"
+            )
+            continue
+
+        session = Session()
+        try:
+            events = (
+                session.query(ProcessedEvent)
+                .filter(ProcessedEvent.id.in_(event_ids))
+                .all()
+            )
+            if not events:
+                logger.error("No processed events found for provided IDs.")
+                continue
+
+            channel_id = get_channel_id(events[0].language)
+
+            if channel_id:
+                try:
+                    await context.bot.send_message(
+                        chat_id=channel_id, text=text, parse_mode="Markdown"
+                    )
+                    for event in events:
+                        event.sent = True
+                        event.sent_time = datetime.now().isoformat()
+                    session.commit()
+                    logger.info(f"Sent grouped message to channel {channel_id}")
+                except RetryAfter as e:
+                    retry_after = e.retry_after
+                    logger.error(
+                        f"Flood control exceeded. Retry in {retry_after} seconds."
+                    )
+                    await asyncio.sleep(retry_after)
+                    if not event.sent:
+                        redis_client.rpush("event_queue", json.dumps(message_info))
+                    session.commit()
+                except Exception as e:
+                    logger.error(f"Failed to send grouped message: {e}")
+                    redis_client.rpush("event_queue", json.dumps(message_info))
+                    session.commit()
+            else:
+                logger.error("Invalid language for processed events")
+
+        except Exception as e:
+            logger.error(f"Failed to send grouped messages: {e}")
+        finally:
+            session.close()
+            await asyncio.sleep(delay)
+
+
 async def post_updates(context: CallbackContext) -> None:
-    """Function to queue unsent processed events and start the message sending process"""
     logger.info("Posting updates to the channel...")
     session = Session()
-    unsent_events = (
-        session.query(ProcessedEvent)
-        .filter_by(sent=False)
-        .order_by(ProcessedEvent.start_time)
-        .all()
-    )
 
-    for event in unsent_events:
-        redis_client.rpush("event_queue", event.id)
+    for language in Language:
+        emergency_events = (
+            session.query(ProcessedEvent)
+            .filter_by(
+                sent=False, language=language, event_type=EventType.POWER, planned=False
+            )
+            .order_by(ProcessedEvent.start_time)
+            .all()
+        )
+
+        if emergency_events:
+            grouped_messages = generate_grouped_messages(emergency_events)
+            for message_info in grouped_messages:
+                redis_client.rpush("event_queue", json.dumps(message_info))
+
+        other_events = (
+            session.query(ProcessedEvent)
+            .filter_by(sent=False, language=language)
+            .filter(ProcessedEvent.event_type != EventType.POWER)
+            .order_by(ProcessedEvent.start_time)
+            .all()
+        )
+
+        for event in other_events:
+            message_info = generate_message(event)
+            if isinstance(message_info, dict):
+                redis_client.rpush("event_queue", json.dumps(message_info))
+            else:
+                logger.error(
+                    f"Invalid format for message_info, expected a dictionary: {message_info}"
+                )
 
     session.commit()
     session.close()
     logger.info("Finished posting updates")
 
-    asyncio.create_task(send_message(context, MESSAGE_DELAY))
+    asyncio.create_task(send_grouped_messages(context, MESSAGE_DELAY))
 
 
 async def check_for_updates(context: CallbackContext) -> None:
@@ -180,10 +348,6 @@ async def check_for_updates(context: CallbackContext) -> None:
 
 
 def process_emergency_power_events():
-    """
-    Aggregate emergency power events by combining house numbers for events with the same
-    start time, area, district, language, and event type. Marks the original events as processed.
-    """
     session = Session()
     try:
         unprocessed_emergency_power_events = (
@@ -215,8 +379,12 @@ def process_emergency_power_events():
         )
 
         for event in unprocessed_emergency_power_events:
-            # Check if the processed event already exists
-            existing_processed_event = (
+            logger.info(
+                f"Searching for existing event with start_time={event.start_time}, "
+                f"area={event.area}, district={event.district}, language={event.language}"
+            )
+
+            existing_event = (
                 session.query(ProcessedEvent)
                 .filter_by(
                     start_time=event.start_time,
@@ -229,20 +397,30 @@ def process_emergency_power_events():
                 .first()
             )
 
-            if existing_processed_event:
-                # Update the existing event
-                existing_processed_event.house_numbers = ", ".join(
-                    sorted(
-                        set(
-                            existing_processed_event.house_numbers.split(", ")
-                            + event.house_numbers.split(", ")
-                        )
-                    )
+            if existing_event:
+                logger.info(f"Found existing event: {existing_event}")
+                # Добавьте логирование здесь
+                logger.info(f"Trying to mark event with ID {event.id} as processed.")
+                existing_house_numbers = list(
+                    filter(None, existing_event.house_numbers.split(", "))
                 )
-                existing_processed_event.timestamp = datetime.now().isoformat()
+                new_house_numbers = list(filter(None, event.house_numbers.split(", ")))
+
+                existing_event.house_numbers = ", ".join(
+                    sorted(set(existing_house_numbers + new_house_numbers))
+                )
+                existing_event.sent = False
+                existing_event.timestamp = datetime.now().isoformat()
+
                 session.commit()
             else:
-                # Insert a new processed event
+                logger.info(
+                    f"Inserting new processed event with start_time={event.start_time}, "
+                    f"area={event.area}, district={event.district}, language={event.language}"
+                )
+                # Добавьте логирование здесь
+                logger.info(f"Event data: {event}")
+
                 processed_event = ProcessedEvent(
                     start_time=event.start_time,
                     area=event.area,
@@ -256,12 +434,23 @@ def process_emergency_power_events():
                 )
                 session.add(processed_event)
                 session.commit()
+                logger.info(
+                    f"Inserted new processed event with ID {processed_event.id}"
+                )
 
-            # Mark the original event as processed
-            session.query(Event).filter(Event.id == event.id).update(
-                {"processed": True}
-            )
-            session.commit()
+            try:
+                session.query(Event).filter(Event.id == event.id).update(
+                    {"processed": True}
+                )
+                session.commit()
+                logger.info(
+                    f"Marked event with ID {event.id} as processed and committed."
+                )
+            except Exception as e:
+                logger.error(
+                    f"Failed to mark event with ID {event.id} as processed: {e}"
+                )
+                session.rollback()
 
     except IntegrityError as e:
         session.rollback()
