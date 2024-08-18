@@ -31,3 +31,41 @@ def compute_hash(*args):
 
 def compute_hash_by_text(text):
     return hashlib.md5(text.encode("utf-8")).hexdigest()
+
+
+def escape_markdown_v2(text):
+    """
+    Escapes special characters in the text for correct rendering in MarkdownV2.
+
+    Args:
+        text (str): The text to be escaped.
+
+    Returns:
+        str: The escaped text ready for MarkdownV2.
+    """
+    special_characters = [
+        "_",
+        "*",
+        "[",
+        "]",
+        "(",
+        ")",
+        "~",
+        "`",
+        ">",
+        "#",
+        "+",
+        "-",
+        "=",
+        "|",
+        "{",
+        "}",
+        ".",
+        "!",
+    ]
+    escaped_text = text
+
+    for char in special_characters:
+        escaped_text = escaped_text.replace(char, f"\\{char}")
+
+    return escaped_text
