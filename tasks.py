@@ -350,14 +350,14 @@ async def check_for_updates(context: CallbackContext) -> None:
 def process_emergency_power_events():
     session = Session()
     try:
-        unprocessed_emergency_power_events = (
+        grouped_events = (
             session.query(
-                Event.id,
                 Event.start_time,
                 Event.area,
                 Event.district,
                 Event.language,
                 Event.event_type,
+                func.group_concat(Event.id).label("event_ids"),
                 func.group_concat(Event.house_number, ", ").label("house_numbers"),
             )
             .filter(
@@ -378,33 +378,35 @@ def process_emergency_power_events():
             .all()
         )
 
-        for event in unprocessed_emergency_power_events:
-            logger.info(
-                f"Searching for existing event with start_time={event.start_time}, "
-                f"area={event.area}, district={event.district}, language={event.language}"
-            )
+        logger.info(
+            f"Found {len(grouped_events)} grouped unprocessed emergency power events."
+        )
+
+        for group in grouped_events:
+            event_ids = group.event_ids.split(",")
+            logger.info(f"Processing group with event IDs: {event_ids}")
 
             existing_event = (
                 session.query(ProcessedEvent)
                 .filter_by(
-                    start_time=event.start_time,
-                    area=event.area,
-                    district=event.district,
-                    language=event.language,
-                    event_type=event.event_type,
+                    start_time=group.start_time,
+                    area=group.area,
+                    district=group.district,
+                    language=group.language,
+                    event_type=group.event_type,
                     planned=False,
                 )
                 .first()
             )
 
             if existing_event:
-                logger.info(f"Found existing event: {existing_event}")
-                # Добавьте логирование здесь
-                logger.info(f"Trying to mark event with ID {event.id} as processed.")
+                logger.info(
+                    f"Updating existing processed event for group with event IDs: {event_ids}"
+                )
                 existing_house_numbers = list(
                     filter(None, existing_event.house_numbers.split(", "))
                 )
-                new_house_numbers = list(filter(None, event.house_numbers.split(", ")))
+                new_house_numbers = list(filter(None, group.house_numbers.split(", ")))
 
                 existing_event.house_numbers = ", ".join(
                     sorted(set(existing_house_numbers + new_house_numbers))
@@ -415,46 +417,31 @@ def process_emergency_power_events():
                 session.commit()
             else:
                 logger.info(
-                    f"Inserting new processed event with start_time={event.start_time}, "
-                    f"area={event.area}, district={event.district}, language={event.language}"
+                    f"Inserting new processed event for group with event IDs: {event_ids}"
                 )
-                # Добавьте логирование здесь
-                logger.info(f"Event data: {event}")
-
                 processed_event = ProcessedEvent(
-                    start_time=event.start_time,
-                    area=event.area,
-                    district=event.district,
-                    house_numbers=event.house_numbers,
-                    language=event.language,
-                    event_type=event.event_type,
+                    start_time=group.start_time,
+                    area=group.area,
+                    district=group.district,
+                    house_numbers=group.house_numbers,
+                    language=group.language,
+                    event_type=group.event_type,
                     planned=False,
                     sent=False,
                     timestamp=datetime.now().isoformat(),
                 )
                 session.add(processed_event)
                 session.commit()
-                logger.info(
-                    f"Inserted new processed event with ID {processed_event.id}"
-                )
+                logger.info(f"Inserted new processed event with event IDs: {event_ids}")
 
-            try:
-                session.query(Event).filter(Event.id == event.id).update(
-                    {"processed": True}
-                )
-                session.commit()
-                logger.info(
-                    f"Marked event with ID {event.id} as processed and committed."
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to mark event with ID {event.id} as processed: {e}"
-                )
-                session.rollback()
+            session.query(Event).filter(Event.id.in_(event_ids)).update(
+                {"processed": True}, synchronize_session=False
+            )
+            session.commit()
 
-    except IntegrityError as e:
+    except Exception as e:
+        logger.error(f"Failed to process events: {e}")
         session.rollback()
-        logger.error(f"IntegrityError: {e}")
     finally:
         session.close()
 
