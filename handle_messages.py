@@ -116,9 +116,6 @@ async def send_grouped_messages(context, delay):
             )
             continue
 
-        # Log the text being sent
-        logger.info(f"Sending text: {text}")
-
         session = Session()
         try:
             events = (
