@@ -1,3 +1,5 @@
+# bot.py
+
 import signal
 import nest_asyncio
 import logging
@@ -20,6 +22,7 @@ from handlers import (
     unsubscribe,
 )
 from tasks import check_for_updates, post_updates
+from handle_messages import process_redis_messages
 from config import (
     CHECK_FOR_UPDATES_INTERVAL,
     POST_UPDATES_INTERVAL,
@@ -70,6 +73,9 @@ async def main() -> None:
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("unsubscribe", unsubscribe))
     application.add_handler(CommandHandler("list_subscriptions", list_subscriptions))
+
+    # Process any pending messages in the Redis queue
+    await process_redis_messages(application)
 
     job_queue = application.job_queue
 

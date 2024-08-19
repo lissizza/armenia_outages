@@ -47,12 +47,15 @@ def generate_title(event_type, planned, language):
     elif event_type == EventType.GAS:
         title = _("Scheduled gas outage") if planned else _("Emergency gas outage")
 
-    return f"**{title}**\n"
+    return title
 
 
 def generate_house_numbers_section(house_numbers, _):
     """Helper function to generate the house numbers section."""
     if house_numbers:
+        house_numbers = ", ".join(
+            [num for num in house_numbers.split(", ") if num.strip()]
+        )
         return _("House Numbers: {}\n").format(house_numbers)
     return ""
 
@@ -65,26 +68,21 @@ def generate_message(event):
     _ = translation.gettext
 
     title = generate_title(event.event_type, event.planned, event.language)
-
+    title = f"*{escape_markdown_v2(title)}*\n"
     details = ""
     if event.area:
-        details += _("Area: {}\n").format(event.area)
+        details += f"*{escape_markdown_v2(event.area)}*\n"
+    if event.start_time:
+        details += f"*{escape_markdown_v2(event.start_time)}*\n"
     if event.district:
-        details += _("District: {}\n").format(event.district)
+        details += f"{escape_markdown_v2(event.district)}\n"
+
     details += generate_house_numbers_section(event.house_numbers, _)
 
-    if event.start_time:
-        details += _("Start Time: {}\n").format(event.start_time)
-    if event.end_time:
-        details += _("End Time: {}\n").format(event.end_time)
     if event.text:
-        details += _("Details: {}\n").format(event.text)
+        details += _("Details: {}\n").format(escape_markdown_v2(event.text))
 
-    # Escape special characters for MarkdownV2
-    escaped_text = escape_markdown_v2(f"{title}{details}")
-
-    # Create a dictionary with the correct keys
-    message_info = {"event_ids": [event.id], "text": escaped_text}
+    message_info = {"event_ids": [event.id], "text": f"{title}{details}"}
 
     return message_info
 
@@ -117,6 +115,9 @@ async def send_grouped_messages(context, delay):
                 f"Invalid message_info received: event_ids={event_ids}, text={text}. Full message_info: {message_info}"
             )
             continue
+
+        # Log the text being sent
+        logger.info(f"Sending text: {text}")
 
         session = Session()
         try:
@@ -184,27 +185,40 @@ def generate_grouped_messages(events):
 
     messages = []
     for (area, start_time), events in grouped_events.items():
-        title = generate_title(
-            events[0].event_type, events[0].planned, events[0].language
+        title = escape_markdown_v2(
+            generate_title(
+                events[0].event_type, events[0].planned, events[0].language
+            ).strip()
         )
+
+        formatted_area = f"*{escape_markdown_v2(area.strip())}*" if area else ""
+        formatted_time = (
+            f"*{escape_markdown_v2(start_time.strip())}*" if start_time else ""
+        )
+
         current_message = {
-            "text": f"**{title}**\n**{area}**\n**{start_time}**\n\n",
+            "text": f"*{title}*\n{formatted_area}\n{formatted_time}\n",
             "event_ids": [event.id for event in events],
         }
         sorted_events = sorted(events, key=lambda e: e.district or "")
 
         for event in sorted_events:
             if event.district:
-                event_message = f"{event.district}\n{generate_house_numbers_section(event.house_numbers, _)}\n\n"
+                formatted_district = escape_markdown_v2(event.district.strip())
+                formatted_house_numbers = generate_house_numbers_section(
+                    escape_markdown_v2(event.house_numbers), _
+                ).strip()
+                event_message = f"{formatted_district}\n{formatted_house_numbers}\n\n"
             else:
-                event_message = (
-                    f"{generate_house_numbers_section(event.house_numbers, _)}\n\n"
-                )
+                formatted_house_numbers = generate_house_numbers_section(
+                    escape_markdown_v2(event.house_numbers), _
+                ).strip()
+                event_message = f"{formatted_house_numbers}\n\n"
 
             if len(current_message["text"]) + len(event_message) > 4096:
                 messages.append(current_message)
                 current_message = {
-                    "text": f"**{title}**\n**{area}**\n**{start_time}**\n\n"
+                    "text": f"{title}\n{formatted_area}\n{formatted_time}\n"
                     + event_message,
                     "event_ids": [event.id],
                 }
@@ -213,8 +227,14 @@ def generate_grouped_messages(events):
                 current_message["event_ids"].append(event.id)
 
         if current_message["text"]:
-            # Escape the entire message for MarkdownV2
-            current_message["text"] = escape_markdown_v2(current_message["text"])
             messages.append(current_message)
 
     return messages
+
+
+async def process_redis_messages(context) -> None:
+    """Check and process any pending messages in the Redis queue."""
+    logger.info("Checking for pending messages in the Redis queue...")
+    while redis_client.llen("event_queue") > 0:
+        await send_grouped_messages(context, delay=1)
+    logger.info("Finished processing pending messages.")

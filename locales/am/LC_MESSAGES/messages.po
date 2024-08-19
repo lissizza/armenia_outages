@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-18 13:06+0400\n"
+"POT-Creation-Date: 2024-08-19 09:22+0400\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: hy\n"
@@ -17,6 +17,38 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
+
+#: handle_messages.py:44
+msgid "Scheduled water outage"
+msgstr "Պլանային ջրի անջատում"
+
+#: handle_messages.py:44
+msgid "Emergency water outage"
+msgstr "Վթարային ջրի անջատում"
+
+#: handle_messages.py:46
+msgid "Scheduled power outage"
+msgstr "Պլանային էլեկտրաէներգիայի անջատում"
+
+#: handle_messages.py:46
+msgid "Emergency power outage"
+msgstr "Վթարային էլեկտրաէներգիայի անջատում"
+
+#: handle_messages.py:48
+msgid "Scheduled gas outage"
+msgstr "Պլանավորված գազի անջատում"
+
+#: handle_messages.py:48
+msgid "Emergency gas outage"
+msgstr "Ավարիական գազի անջատում"
+
+#: handle_messages.py:56
+msgid "House Numbers: {}\n"
+msgstr "Տների համարներ: {}\n"
+
+#: handle_messages.py:82
+msgid "Details: {}\n"
+msgstr "Մանրամասներ: {}\n"
 
 #: handlers.py:31
 msgid ""
@@ -78,51 +110,15 @@ msgstr ""
 msgid "You have no subscriptions."
 msgstr "Դուք չունեք բաժանորդագրություններ։"
 
-#: tasks.py:53
-msgid "Scheduled water outage"
-msgstr "Պլանային ջրի անջատում"
+#~ msgid "Area: {}\n"
+#~ msgstr "Տարածք: {}\n"
 
-#: tasks.py:53
-msgid "Emergency water outage"
-msgstr "Վթարային ջրի անջատում"
+#~ msgid "District: {}\n"
+#~ msgstr "Շրջան: {}\n"
 
-#: tasks.py:55
-msgid "Scheduled power outage"
-msgstr "Պլանային էլեկտրաէներգիայի անջատում"
+#~ msgid "Start Time: {}\n"
+#~ msgstr "Սկսման ժամանակը: {}\n"
 
-#: tasks.py:55
-msgid "Emergency power outage"
-msgstr "Վթարային էլեկտրաէներգիայի անջատում"
-
-#: tasks.py:57
-msgid "Scheduled gas outage"
-msgstr "Պլանավորված գազի անջատում"
-
-#: tasks.py:57
-msgid "Emergency gas outage"
-msgstr "Ավարիական գազի անջատում"
-
-#: tasks.py:65
-msgid "House Numbers: {}\n"
-msgstr "Տների համարներ: {}\n"
-
-#: tasks.py:80
-msgid "Area: {}\n"
-msgstr "Տարածք: {}\n"
-
-#: tasks.py:82
-msgid "District: {}\n"
-msgstr "Շրջան: {}\n"
-
-#: tasks.py:86
-msgid "Start Time: {}\n"
-msgstr "Սկսման ժամանակը: {}\n"
-
-#: tasks.py:88
-msgid "End Time: {}\n"
-msgstr "Ավարտի ժամանակը: {}\n"
-
-#: tasks.py:90
-msgid "Details: {}\n"
-msgstr "Մանրամասներ: {}\n"
+#~ msgid "End Time: {}\n"
+#~ msgstr "Ավարտի ժամանակը: {}\n"
 
