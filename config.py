@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DB_URI = os.getenv("DATABASE_URL", "sqlite:///events.db")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CHROMEDRIVER_PATH = os.getenv(
@@ -19,7 +20,7 @@ POWER_OUTAGE_URL = "https://www.ena.am/Info.aspx?id=5&lang={lang}"
 WATER_OUTAGE_URL = "https://interactive.vjur.am/"
 
 # Scheduling intervals and first run times
-CHECK_FOR_UPDATES_INTERVAL = int(os.getenv("CHECK_FOR_UPDATES_INTERVAL", 3600))
-POST_UPDATES_INTERVAL = int(os.getenv("POST_UPDATES_INTERVAL", 3600))
+CHECK_FOR_UPDATES_INTERVAL = int(os.getenv("CHECK_FOR_UPDATES_INTERVAL", 1800))
+POST_UPDATES_INTERVAL = int(os.getenv("POST_UPDATES_INTERVAL", 1800))
 CHECK_FOR_UPDATES_FIRST = int(os.getenv("CHECK_FOR_UPDATES_FIRST", 5))
-POST_UPDATES_FIRST = int(os.getenv("POST_UPDATES_FIRST", 180))
+POST_UPDATES_FIRST = int(os.getenv("POST_UPDATES_FIRST", 120))

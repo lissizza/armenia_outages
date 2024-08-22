@@ -1,5 +1,7 @@
+from sqlite3 import IntegrityError
 import time
 import logging
+import requests
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from models import Event, EventType, Language
@@ -157,6 +159,44 @@ def parse_emergency_power_events(event_type, planned, language):
         logger.error(f"Error during parsing: {e}")
     finally:
         driver.quit()
+
+
+def parse_planned_power_events():
+    url = POWER_OUTAGE_URL.format(lang=1)
+    response = requests.get(url)
+    response.raise_for_status()
+
+    soup = BeautifulSoup(response.content, "html.parser")
+    content_element = soup.find("span", id="ctl00_ContentPlaceHolder1_attenbody")
+
+    if not content_element:
+        logger.error("Could not find the content element on the page.")
+        return
+
+    text_content = content_element.get_text(separator="\n").strip()
+    save_planned_event_to_db(text_content)
+
+
+def save_planned_event_to_db(text):
+    session = Session()
+    try:
+        event_hash = compute_hash(text)
+        event = Event(
+            event_type=EventType.POWER,
+            planned=True,
+            language=Language.RU,
+            text=text,
+            timestamp=datetime.now().isoformat(),
+            hash=event_hash,
+        )
+        session.add(event)
+        session.commit()
+        logger.info("Planned power event saved successfully.")
+    except IntegrityError:
+        session.rollback()
+        logger.error("Failed to save planned power event due to IntegrityError.")
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ from handlers import (
     unsubscribe,
 )
 from tasks import check_for_updates, post_updates
-from handle_messages import process_redis_messages
+from send_posts import process_redis_messages
 from config import (
     CHECK_FOR_UPDATES_INTERVAL,
     POST_UPDATES_INTERVAL,

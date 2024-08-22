@@ -1,4 +1,16 @@
-from sqlalchemy import Column, Integer, String, Enum, UniqueConstraint, Boolean, Text
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Enum,
+    Table,
+    UniqueConstraint,
+    Boolean,
+    Text,
+)
+from sqlalchemy.orm import relationship
 from db import Base
 from enum import Enum as PyEnum
 
@@ -12,11 +24,19 @@ class EventType(PyEnum):
 class Language(PyEnum):
     RU = ("ru", 3)
     EN = ("en", 2)
-    AM = ("am", 1)
+    HY = ("hy", 1)
 
     @property
     def code(self):
         return self.value[1]
+
+
+post_event_association = Table(
+    "post_event_association",
+    Base.metadata,
+    Column("post_id", ForeignKey("posts.id"), primary_key=True),
+    Column("event_id", ForeignKey("events.id"), primary_key=True),
+)
 
 
 class Event(Base):
@@ -36,6 +56,10 @@ class Event(Base):
     processed = Column(Boolean, default=False)
     timestamp = Column(String)
     hash = Column(String, nullable=False)
+
+    posts = relationship(
+        "Post", secondary=post_event_association, back_populates="events"
+    )
 
     __table_args__ = (UniqueConstraint("hash", name="_event_hash_uc"),)
 
@@ -76,4 +100,18 @@ class ProcessedEvent(Base):
             "language",
             name="_unique_agg_event",
         ),
+    )
+
+
+class Post(Base):
+    __tablename__ = "posts"
+
+    id = Column(Integer, primary_key=True)
+    language = Column(String(2), nullable=False)
+    text = Column(String, nullable=False)
+    creation_time = Column(DateTime, nullable=False)
+    posted_time = Column(DateTime, nullable=True)
+
+    events = relationship(
+        "Event", secondary=post_event_association, back_populates="posts"
     )

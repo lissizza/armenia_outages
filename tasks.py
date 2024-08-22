@@ -3,18 +3,21 @@ import json
 import logging
 from telegram.ext import CallbackContext
 from handle_events import process_emergency_power_events, process_water_events
-from handle_messages import (
+from handle_posts import (
     generate_message,
-    send_grouped_messages,
-    generate_grouped_messages,
+    generate_emergency_power_messages,
 )
 from db import Session
 from models import EventType, Language, ProcessedEvent
 from config import REDIS_URL
 import redis
 
-from parsers.power_parser import parse_emergency_power_events
+from parsers.power_parser import (
+    parse_emergency_power_events,
+    parse_planned_power_events,
+)
 from parsers.water_parser import parse_water_events
+from send_posts import send_grouped_messages
 
 logger = logging.getLogger(__name__)
 redis_client = redis.StrictRedis.from_url(REDIS_URL)
@@ -37,7 +40,7 @@ async def post_updates(context: CallbackContext) -> None:
         )
 
         if emergency_events:
-            grouped_messages = generate_grouped_messages(emergency_events)
+            grouped_messages = generate_emergency_power_messages(emergency_events)
             for message_info in grouped_messages:
                 redis_client.rpush("event_queue", json.dumps(message_info))
 
@@ -66,7 +69,6 @@ async def post_updates(context: CallbackContext) -> None:
 
 
 async def check_for_updates(context: CallbackContext) -> None:
-    """Function to check for updates and process new events"""
     logger.info("Checking for updates...")
     for language in Language:
         logger.info(f"Parsing emergency power updates for language: {language.name}")
@@ -80,3 +82,6 @@ async def check_for_updates(context: CallbackContext) -> None:
 
     logger.info("Processing water events...")
     process_water_events()
+
+    logger.info("Parsing planned power updates")
+    parse_planned_power_events()
