@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-24 16:24+0400\n"
+"POT-Creation-Date: 2024-08-24 17:40+0400\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: hy\n"
@@ -86,43 +86,57 @@ msgstr ""
 msgid "You have no subscriptions."
 msgstr "Դուք չունեք բաժանորդագրություններ։"
 
-#: action_handlers/subscribe_handler.py:40
-msgid "Enter a new area"
-msgstr ""
-
-#: action_handlers/subscribe_handler.py:44
-msgid "Please select an area from the list or enter a new one:"
-msgstr ""
-
 #: action_handlers/subscribe_handler.py:54
+msgid "Enter a new area"
+msgstr "Մուտքագրեք նոր տարածք"
+
+#: action_handlers/subscribe_handler.py:58
+msgid "Please select an area from the list or enter a new one:"
+msgstr "Խնդրում ենք ընտրել տարածք ցանկից կամ մուտքագրել նոր տարածք՝"
+
+#: action_handlers/subscribe_handler.py:76
+#: action_handlers/subscribe_handler.py:80
 msgid "Please enter the name of the new area (letters only):"
-msgstr ""
+msgstr "Խնդրում ենք մուտքագրել նոր տարածքի անունը (միայն տառերով)՝"
 
-#: action_handlers/subscribe_handler.py:67
+#: action_handlers/subscribe_handler.py:99
 msgid "The area name must contain only letters. Please try again:"
-msgstr ""
+msgstr "Տարածքի անվանումը պետք է պարունակի միայն տառեր։ Խնդրում ենք փորձել կրկին՝"
 
-#: action_handlers/subscribe_handler.py:94
+#: action_handlers/subscribe_handler.py:119
 msgid "The area '{}' has been added and selected."
-msgstr ""
+msgstr "Տարածքը '{}' ավելացվել է և ընտրվել է։"
 
-#: action_handlers/subscribe_handler.py:112
-msgid "You selected area with ID: {}"
-msgstr ""
+#: action_handlers/subscribe_handler.py:146
+msgid "You selected the area: {}"
+msgstr "Դուք ընտրել եք '{}' տարածքը։"
 
-#: action_handlers/subscribe_handler.py:121
+#: action_handlers/subscribe_handler.py:156
+msgid "Area not found. Please try again."
+msgstr "Տարածքը չի գտնվել։ Խնդրում ենք փորձել կրկին։"
+
+#: action_handlers/subscribe_handler.py:169
+#: action_handlers/subscribe_handler.py:172
 msgid "Please provide a keyword to subscribe to:"
-msgstr "Խնդրում ենք մուտքագրել բաժանորդագրվելու բանալի բառ՝"
-
-#: action_handlers/subscribe_handler.py:132
-msgid "Please select an area first."
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:136
-msgid "You have subscribed to {}."
-msgstr "Դուք բաժանորդագրվել եք {}-ին։"
+#: action_handlers/subscribe_handler.py:190
+msgid ""
+"The keyword must contain only letters, digits, and be at least 3 "
+"characters long. Please try again:"
+msgstr ""
+"Բանալի բառը պետք է պարունակի միայն տառեր և թվեր և լինի առնվազն 3 նիշ "
+"երկարությամբ։ Խնդրում ենք փորձել կրկին։"
 
-#: action_handlers/subscribe_handler.py:158
+#: action_handlers/subscribe_handler.py:198
+msgid "Please select an area first."
+msgstr "Խնդրում ենք նախ ընտրել տարածք։"
+
+#: action_handlers/subscribe_handler.py:206
+msgid "You have subscribed to {}, {}."
+msgstr "Դուք բաժանորդագրվել եք '{}' և '{}'։"
+
+#: action_handlers/subscribe_handler.py:238
 msgid "Subscription cancelled."
-msgstr "Բաժանորդագրությունը չեղարկված է։"
+msgstr ""
 

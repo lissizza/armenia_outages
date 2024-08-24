@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-24 16:24+0400\n"
+"POT-Creation-Date: 2024-08-24 17:40+0400\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -82,43 +82,55 @@ msgstr ""
 msgid "You have no subscriptions."
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:40
+#: action_handlers/subscribe_handler.py:54
 msgid "Enter a new area"
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:44
+#: action_handlers/subscribe_handler.py:58
 msgid "Please select an area from the list or enter a new one:"
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:54
+#: action_handlers/subscribe_handler.py:76
+#: action_handlers/subscribe_handler.py:80
 msgid "Please enter the name of the new area (letters only):"
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:67
+#: action_handlers/subscribe_handler.py:99
 msgid "The area name must contain only letters. Please try again:"
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:94
+#: action_handlers/subscribe_handler.py:119
 msgid "The area '{}' has been added and selected."
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:112
-msgid "You selected area with ID: {}"
+#: action_handlers/subscribe_handler.py:146
+msgid "You selected the area: {}"
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:121
+#: action_handlers/subscribe_handler.py:156
+msgid "Area not found. Please try again."
+msgstr ""
+
+#: action_handlers/subscribe_handler.py:169
+#: action_handlers/subscribe_handler.py:172
 msgid "Please provide a keyword to subscribe to:"
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:132
+#: action_handlers/subscribe_handler.py:190
+msgid ""
+"The keyword must contain only letters, digits, and be at least 3 "
+"characters long. Please try again:"
+msgstr ""
+
+#: action_handlers/subscribe_handler.py:198
 msgid "Please select an area first."
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:136
-msgid "You have subscribed to {}."
+#: action_handlers/subscribe_handler.py:206
+msgid "You have subscribed to {}, {}."
 msgstr ""
 
-#: action_handlers/subscribe_handler.py:158
+#: action_handlers/subscribe_handler.py:238
 msgid "Subscription cancelled."
 msgstr ""
 

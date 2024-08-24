@@ -9,6 +9,7 @@ from telegram.ext import (
     CommandHandler,
     CallbackQueryHandler,
     CallbackContext,
+    InlineQueryHandler,
 )
 from config import (
     CHECK_FOR_POWER_UPDATES_INTERVAL,
@@ -23,7 +24,7 @@ from action_handlers.handlers import (
     list_subscriptions,
     unsubscribe,
 )
-from action_handlers.subscribe_handler import subscribe_handler
+from action_handlers.subscribe_handler import inline_query, subscribe_handler
 from tasks import (
     post_updates,
     update_and_create_power_posts,
@@ -78,6 +79,7 @@ async def main() -> None:
         CallbackQueryHandler(set_language, pattern="^set_language ")
     )
     application.add_handler(subscribe_handler)
+    application.add_handler(InlineQueryHandler(inline_query))
     application.add_handler(CommandHandler("unsubscribe", unsubscribe))
     application.add_handler(CommandHandler("list_subscriptions", list_subscriptions))
 
