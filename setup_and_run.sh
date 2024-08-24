@@ -7,17 +7,31 @@ echo "Updating translations..."
 # Install Chrome and ChromeDriver
 echo "Installing Chrome and ChromeDriver..."
 
-# Continue with the rest of your installation
-# (Make sure the correct URLs are used for downloading)
+# Download and install Google Chrome
+echo "Downloading and installing Google Chrome..."
 wget -O /app/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo dpkg -i /app/google-chrome-stable_current_amd64.deb || sudo apt-get -fy install
 
+# Check where Google Chrome is installed and set CHROME_BIN
+echo "Checking the location of Google Chrome binary after installation..."
+CHROME_PATH=$(which google-chrome || which google-chrome-stable)
+
+if [ -n "$CHROME_PATH" ]; then
+    echo "Google Chrome found at: $CHROME_PATH"
+    export CHROME_BIN="$CHROME_PATH"
+else
+    echo "Google Chrome not found in PATH after installation."
+fi
+
+# Download and install ChromeDriver
 wget -O /app/chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip
 unzip /app/chromedriver_linux64.zip -d /app/chromedriver/
 
-# Check where Google Chrome is installed
-echo "Checking the location of google-chrome binary..."
-which google-chrome || echo "Google Chrome not found in PATH."
+# Make ChromeDriver executable
+chmod +x /app/chromedriver/chromedriver
+
+# Update PATH to include ChromeDriver
+export PATH=$PATH:/app/chromedriver
 
 # Start the bot or application
 echo "Starting the bot..."
