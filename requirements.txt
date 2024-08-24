@@ -34,8 +34,10 @@ httpcore==1.0.5
 httpx==0.27.0
 hyperframe==5.2.0
 idna==2.10
+iniconfig==2.0.0
 ipython==8.26.0
 isoduration==20.11.0
+isort==5.13.2
 jedi==0.19.1
 jellyfish==1.1.0
 jiter==0.5.0
@@ -57,6 +59,7 @@ pip-autoremove==0.10.0
 pipdeptree==2.23.1
 pipenv==2024.0.1
 platformdirs==4.2.2
+pluggy==1.5.0
 prompt_toolkit==3.0.47
 ptyprocess==0.7.0
 pullenti-client==0.6.0
@@ -66,6 +69,8 @@ pydantic_core==2.20.1
 Pygments==2.18.0
 pymorphy2-dicts-ru==2.4.417127.4579844
 PySocks==1.7.1
+pytest==8.3.2
+pytest-asyncio==0.24.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-telegram-bot==21.4
