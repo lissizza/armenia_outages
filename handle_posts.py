@@ -7,14 +7,15 @@ from sqlite3 import IntegrityError
 import openai
 from sqlalchemy import func
 from utils import escape_markdown_v2, get_translation, translate_text
-from models import Event, EventType, Language, Post
+from models import Area, Event, EventType, Language, Post
 from db import Session
+from sqlalchemy.orm import Session as SQLAlchemySession
 
 logger = logging.getLogger(__name__)
 translations = get_translation()
 
 
-async def save_post_to_db(session, text, event_ids, language):
+async def save_post_to_db(session, text, event_ids, language, area):
     """Save a generated post to the database with multiple event_ids asynchronously."""
     loop = asyncio.get_event_loop()
     events = await loop.run_in_executor(
@@ -23,6 +24,7 @@ async def save_post_to_db(session, text, event_ids, language):
 
     post = Post(
         language=language,
+        area=area,
         text=text,
         creation_time=datetime.now(),
         posted_time=None,
@@ -31,6 +33,70 @@ async def save_post_to_db(session, text, event_ids, language):
 
     await loop.run_in_executor(None, session.add, post)
     logger.debug(f"Post saved to the database: {text[:60]}...")
+
+
+async def clean_area_name(raw_name):
+    prefixes = [
+        "г.",
+        "город",
+        "с.",
+        "деревня",
+        "пгт",
+        "поселок",
+        "Ք.",
+        "Քաղաք",
+        "Գ.",
+        "Գյուղ",
+        "Վ.",
+        "С.",
+        "Г.",
+        "V.",
+        "V",
+        "Ս.",
+    ]
+
+    for prefix in prefixes:
+        if raw_name.startswith(prefix):
+            raw_name = raw_name[len(prefix) :].strip()
+            break
+        elif "." in raw_name:
+            raw_name = raw_name.split(".")[1].strip()
+            break
+
+    cleaned_name = raw_name.split("(")[0].strip()
+
+    return cleaned_name.capitalize()
+
+
+async def get_or_create_area(
+    session: SQLAlchemySession, area_name: str, language: Language
+) -> Area:
+    """
+    Retrieves an existing Area by name and language, or creates it if it doesn't exist.
+
+    :param session: SQLAlchemy session.
+    :param area_name: The name of the area.
+    :param language: The language of the area.
+    :return: The Area instance.
+    """
+    area_name = await clean_area_name(area_name)
+    loop = asyncio.get_event_loop()
+
+    # Check if the area already exists
+    area = await loop.run_in_executor(
+        None,
+        lambda: session.query(Area)
+        .filter_by(name=area_name, language=language)
+        .first(),
+    )
+
+    # If the area doesn't exist, create it
+    if not area:
+        area = Area(name=area_name, language=language)
+        session.add(area)
+        await loop.run_in_executor(None, session.commit)
+
+    return area
 
 
 def generate_title(event_type, planned, language):
@@ -122,6 +188,8 @@ async def generate_emergency_power_posts():
         ), events_group in posts_by_area_and_time.items():
             _ = translations[language.name]
 
+            db_area = await get_or_create_area(session, area, language)
+
             title = _("Emergency power outage")
 
             formatted_area = f"*{escape_markdown_v2(area.strip())}*" if area else ""
@@ -150,7 +218,9 @@ async def generate_emergency_power_posts():
                     event_message = f"{formatted_house_numbers}\n\n"
 
                 if len(post_text) + len(event_message) > 4096:
-                    await save_post_to_db(session, post_text, all_event_ids, language)
+                    await save_post_to_db(
+                        session, post_text, all_event_ids, language, db_area
+                    )
                     post_text = (
                         f"*{title}*\n{formatted_area}\n{formatted_time}\n"
                         + event_message
@@ -161,7 +231,9 @@ async def generate_emergency_power_posts():
                     all_event_ids.extend(event["event_ids"])
 
             if post_text:
-                await save_post_to_db(session, post_text, all_event_ids, language)
+                await save_post_to_db(
+                    session, post_text, all_event_ids, language, db_area
+                )
 
             await loop.run_in_executor(
                 None,
@@ -187,7 +259,7 @@ async def parse_planned_power_event(text):
 Please parse the following Armenian text into structured data and return the result as a JSON object. 
 For each event, extract the following information:
 
-- Location: the area where the outage will occur (city, region, village, etc.)
+- Area: the area where the outage will occur (city, region, village, etc.)
 - Start Time: combine the date and start time into the format 'DD.MM.YYYY HH:MM'
 - End Time: combine the date and end time into the format 'DD.MM.YYYY HH:MM'
 - Language: the language of the text (EN for English, RU for Russian, HY for Armenian)
@@ -213,42 +285,42 @@ The output should be:
 [
     {
         "language": "HY",
-        "location": "Երևան",
+        "area": "Երևան",
         "start_time": "22.08.2024 10:00",
         "end_time": "22.08.2024 16:00",
         "text": "Ֆրունզեի փ․\nՕբյեկտներ: 4/1, 6, 6/1, 6/2 շենքեր և հարակից ոչ բնակիչ- բաժանորդներ"
     },
         {
         "language": "RU",
-        "location": "Ереван",
+        "area": "Ереван",
         "start_time": "22.08.2024 10:00",
         "end_time": "22.08.2024 16:00",
         "text": "ул. Фрунзе\nОбъекты: дома 4/1, 6, 6/1, 6/2 и прилегающие абоненты не являющиеся жильцами"
     },
         {
         "language": "EN",
-        "location": "Yerevan",
+        "area": "Yerevan",
         "start_time": "22.08.2024 10:00",
         "end_time": "22.08.2024 16:00",
         "text": "Frunze St.\nObjects: buildings 4/1, 6, 6/1, 6/2 and adjacent non-dweller customers"
     },
     {
         "language": "HY",
-        "location": "Երևան",
+        "area": "Երևան",
         "start_time": "22.08.2024 11:00",
         "end_time": "22.08.2024 16:00",
         "text": "Նուբարաշեն Բ թաղամաս, Նորք Մարաշ՝ Նորքի 17 փողոց 1-ին նրբանցք\nՕբյեկտներ: 24/1, 31 առանձնատներ\nԴավիթ Բեկի փ. 97/26, 97/23 առանձնատներ, Դավիթ Բեկի փ. 103/4 հասարակական շինություն և հարակից ոչ բնակիչ- բաժանորդներ"
     },
     {
         "language": "RU",
-        "location": "Ереван",
+        "area": "Ереван",
         "start_time": "22.08.2024 11:00",
         "end_time": "22.08.2024 16:00",
         "text": "Нубарашен Б квартал, Норк Мараш, Норк 17-я улица, 1-й переулок\nОбъекты: дома 24/1, 31\nул. Давид Бек 97/26, 97/23 и прилегающие абоненты не являющиеся жильцами"
     },
     {
         "language": "EN",
-        "location": "Yerevan",
+        "area": "Yerevan",
         "start_time": "22.08.2024 11:00",
         "end_time": "22.08.2024 16:00",
         "text": "Nubarashen B District, Nork Marash, Nork 17th Street, 1st Lane\nObjects: buildings 24/1, 31\nDavid Bek St. 97/26, 97/23, 103/4 and adjacent non-dweller customers"
@@ -292,7 +364,7 @@ async def generate_planned_power_post(parsed_event, original_event_id):
         for event_data in event_data_list:
             start_time = event_data["start_time"]
             end_time = event_data["end_time"]
-            location = event_data["location"]
+            area = event_data["area"]
             text = event_data["text"]
             language = event_data["language"]
 
@@ -305,12 +377,22 @@ async def generate_planned_power_post(parsed_event, original_event_id):
                 logger.error(f"Unknown language code: {language}")
                 continue
 
-            escaped_location = escape_markdown_v2(location)
+            escaped_area = escape_markdown_v2(area)
             escaped_time = escape_markdown_v2(f"{start_time} - {end_time}")
             escaped_text = escape_markdown_v2(text)
 
-            post_text = f"**{title}**\n**{escaped_location}**\n**{escaped_time}**\n\n{escaped_text}"
-            await save_post_to_db(session, post_text, [original_event_id], lang_enum)
+            db_area = await get_or_create_area(session, area, lang_enum)
+
+            post_text = (
+                f"**{title}**\n**{escaped_area}**\n**{escaped_time}**\n\n{escaped_text}"
+            )
+            await save_post_to_db(
+                session,
+                language=lang_enum,
+                area=db_area,
+                text=post_text,
+                events=[original_event_id],
+            )
 
         session.commit()
         logger.info("Posts have been committed to the database.")
@@ -324,6 +406,10 @@ async def generate_planned_power_post(parsed_event, original_event_id):
 
 async def generate_water_posts():
     session = Session()
+    all_areas = await asyncio.get_event_loop().run_in_executor(
+        None, lambda: session.query(Area).all()
+    )
+
     unprocessed_water_events = await asyncio.get_event_loop().run_in_executor(
         None,
         lambda: session.query(Event)
@@ -343,7 +429,22 @@ async def generate_water_posts():
             (Language.EN, translation_en),
         ]
 
+        matched_area = None
+
         try:
+            for language, text in google_translations:
+                for area in all_areas:
+                    if area.language == language and area.name.lower() in text.lower():
+                        matched_area = area
+                        break
+                if matched_area:
+                    break
+
+            if matched_area:
+                logger.info(f"Area matched: {matched_area.name} for event {event.id}")
+            else:
+                logger.warning(f"No area matched for event {event.id}")
+
             for language, text in google_translations:
                 _ = translations[language.name]
                 title = (
@@ -360,6 +461,7 @@ async def generate_water_posts():
                     creation_time=datetime.now(),
                     posted_time=None,
                     events=[event],
+                    area=matched_area,
                 )
                 session.add(post)
 

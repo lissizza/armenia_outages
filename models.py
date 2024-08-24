@@ -48,6 +48,21 @@ post_event_association = Table(
 )
 
 
+class Area(Base):
+    __tablename__ = "areas"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True, nullable=False)
+    language = Column(Enum(Language), nullable=False)
+
+    subscriptions = relationship("Subscription", back_populates="area")
+    posts = relationship("Post", back_populates="area")
+
+    __table_args__ = (
+        UniqueConstraint("name", "language", name="uq_area_name_language"),
+    )
+
+
 class BotUser(Base):
     __tablename__ = "bot_users"
 
@@ -92,12 +107,15 @@ class Event(Base):
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
+
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("bot_users.id"))
-    keyword = Column(String)
+    keyword = Column(String, nullable=False)
+    area_id = Column(Integer, ForeignKey("areas.id"), nullable=False)
     created = Column(DateTime, default=datetime.now)
 
     user = relationship("BotUser", back_populates="subscriptions")
+    area = relationship("Area", back_populates="subscriptions")
 
 
 class Post(Base):
@@ -108,7 +126,9 @@ class Post(Base):
     text = Column(String, nullable=False)
     creation_time = Column(DateTime, default=datetime.now)
     posted_time = Column(DateTime, nullable=True)
+    area_id = Column(Integer, ForeignKey("areas.id"), nullable=True)
 
     events = relationship(
         "Event", secondary=post_event_association, back_populates="posts"
     )
+    area = relationship("Area", back_populates="posts")
