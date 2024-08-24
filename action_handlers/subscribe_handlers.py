@@ -291,12 +291,15 @@ subscribe_handler = ConversationHandler(
 
 
 async def subscription_list(update: Update, context: CallbackContext) -> None:
-    """
-    Lists all subscriptions for the user and provides unsubscribe buttons.
-    """
-    # Fetch the user data
     user = await get_user_by_telegram_id(update.effective_user.id)
-    _ = translations[user.language.name]  # Get translation function for user's language
+
+    if user is None:
+        await update.message.reply_text(
+            "You are not registered. Please use the /start command to register."
+        )
+        return
+
+    _ = translations[user.language.name]
 
     # Create a session to query the database
     session = Session()
