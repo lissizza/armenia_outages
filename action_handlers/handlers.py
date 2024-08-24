@@ -1,34 +1,23 @@
+import asyncio
 import os
-import gettext
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import Forbidden
 from telegram.ext import CallbackContext
 from db import Session
 from models import Subscription, Language
-from user_logic import save_user
-from utils import get_user_by_telegram_id
+from user_logic import save_user, get_user_by_telegram_id
+from utils import get_translation
 
 logger = logging.getLogger(__name__)
 
 
 # Initialize translations
 locales_dir = os.path.join(os.path.dirname(__file__), "locales")
-translations = {}
-
-for language in Language:
-    try:
-        translation = gettext.translation(
-            "messages", localedir=locales_dir, languages=[language.value[0]]
-        )
-        translation.install()
-        translations[language.name] = translation.gettext
-    except Exception as e:
-        logger.error(f"Error loading translation for {language.value[0]}: {e}")
+translations = get_translation()
 
 
 async def error_handler(update: Update, context: CallbackContext) -> None:
-    """Log the error and handle specific exceptions."""
     try:
         raise context.error
     except Forbidden:
@@ -46,11 +35,11 @@ async def safe_reply_text(update: Update, text: str, **kwargs) -> None:
 
 async def start(update: Update, context: CallbackContext) -> None:
     telegram_id = update.effective_user.id
-    user = get_user_by_telegram_id(telegram_id)
+    user = await get_user_by_telegram_id(telegram_id)
 
     if user is None:
-        save_user(update.effective_user)
-        user = get_user_by_telegram_id(telegram_id)
+        await save_user(update.effective_user)
+        user = await get_user_by_telegram_id(telegram_id)
 
     _ = translations[user.language.name]
 
@@ -60,30 +49,43 @@ async def start(update: Update, context: CallbackContext) -> None:
         ).format(user.first_name),
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("English", callback_data="set_language en")],
-                [InlineKeyboardButton("Русский", callback_data="set_language ru")],
-                [InlineKeyboardButton("Հայերեն", callback_data="set_language am")],
+                [InlineKeyboardButton("English", callback_data="set_language EN")],
+                [InlineKeyboardButton("Русский", callback_data="set_language RU")],
+                [InlineKeyboardButton("Հայերեն", callback_data="set_language HY")],
             ]
         ),
     )
 
 
-def update_user_language(telegram_id, language):
+async def update_user_language(telegram_id: int, language: Language) -> None:
     """
-    Updates the language of the user in the database.
+    Asynchronously updates the language of the user in the database.
 
     :param telegram_id: Telegram user ID
     :param language: New language to be set
     """
     session = Session()
     try:
-        user = get_user_by_telegram_id(telegram_id)
-        user.language = language
-        session.commit()
-        logger.info(f"Updated language for user {telegram_id} to {language}")
+        user = await get_user_by_telegram_id(telegram_id)
+        if user:
+            logger.info(f"Current language for user {telegram_id}: {user.language}")
+            user.language = language
+
+            merged_user = session.merge(user)
+
+            await asyncio.get_event_loop().run_in_executor(None, session.commit)
+            logger.info(
+                f"Commit successful for user {telegram_id}. Language should now be: {merged_user.language}"
+            )
+            session.refresh(merged_user)
+            logger.info(
+                f"After commit, language for user {telegram_id} is: {merged_user.language}"
+            )
+        else:
+            logger.error(f"User with telegram_id {telegram_id} not found.")
     except Exception as e:
-        logger.error(f"Failed to update language for user {telegram_id}: {e}")
         session.rollback()
+        logger.error(f"Failed to update language for user {telegram_id}: {e}")
     finally:
         session.close()
 
@@ -94,10 +96,11 @@ async def set_language(update: Update, context: CallbackContext) -> None:
     language_code = query.data.split()[-1]
 
     try:
-        language = Language.from_code(language_code.upper())
+        language = Language.from_code(language_code)
         logger.info(f"Setting language for user {telegram_id} to {language}")
-        update_user_language(telegram_id, language)
-        user = get_user_by_telegram_id(telegram_id)
+        await update_user_language(telegram_id, language)
+
+        user = await get_user_by_telegram_id(telegram_id)
         _ = translations[user.language.name]
 
         await query.answer(_("Language has been set to {}").format(language_code))
@@ -106,55 +109,15 @@ async def set_language(update: Update, context: CallbackContext) -> None:
         )
     except ValueError as e:
         logger.error(e)
+        user = await get_user_by_telegram_id(telegram_id)
+        _ = translations[user.language.name]
+
         await query.answer(_("Invalid language code"))
-
-
-async def subscribe(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.from_user.id
-    user = get_user_by_telegram_id(user_id)
-    _ = translations[user.language.name]
-
-    if len(context.args) < 1:
-        await safe_reply_text(_("Usage: /subscribe <keyword>"))
-        return
-
-    keyword = context.args[0]
-
-    if not (3 <= len(keyword) <= 256):
-        await safe_reply_text(_("Keyword must be between 3 and 256 characters long."))
-        return
-
-    session = Session()
-    existing_subscription = (
-        session.query(Subscription).filter_by(user_id=user_id, keyword=keyword).first()
-    )
-
-    if existing_subscription:
-        await safe_reply_text(
-            _(
-                'Subscription for keyword "{}" already exists. Please choose another keyword.'
-            ).format(keyword)
-        )
-    else:
-        subscription = Subscription(
-            user_id=user_id,
-            keyword=keyword,
-            language=user.language,
-        )
-        session.add(subscription)
-        session.commit()
-        await safe_reply_text(
-            _('You have subscribed to notifications for the keyword "{}".').format(
-                keyword
-            )
-        )
-
-    session.close()
 
 
 async def unsubscribe(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    user = get_user_by_telegram_id(user_id)
+    user = await get_user_by_telegram_id(user_id)
     _ = translations[user.language.name]
 
     if len(context.args) < 1:
@@ -197,8 +160,10 @@ async def list_subscriptions(update: Update, context: CallbackContext) -> None:
         subscription_list = "\n".join(
             [f"{sub.keyword} ({sub.language})" for sub in subscriptions]
         )
-        await safe_reply_text(_("Your subscriptions:\n{}").format(subscription_list))
+        await safe_reply_text(
+            update, _("Your subscriptions:\n{}").format(subscription_list)
+        )
     else:
-        await safe_reply_text(_("You have no subscriptions."))
+        await safe_reply_text(update, _("You have no subscriptions."))
 
     session.close()

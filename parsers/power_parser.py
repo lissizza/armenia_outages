@@ -1,35 +1,16 @@
-from sqlite3 import IntegrityError
-import time
+import asyncio
 import logging
-import requests
+from datetime import datetime, timedelta
+from urllib3.exceptions import NewConnectionError, MaxRetryError
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from models import Event, EventType, Language
 from config import POWER_OUTAGE_URL
 from db import Session
 from utils import compute_hash, normalize_string
-from datetime import datetime
-from urllib3.exceptions import NewConnectionError, MaxRetryError
-from parsers.webdriver_utils import start_webdriver, restart_webdriver
-from datetime import timedelta
+from parsers.webdriver_utils import start_webdriver_async, restart_webdriver_async
 
 logger = logging.getLogger(__name__)
-
-
-def parse_table(driver):
-    html = driver.page_source
-    soup = BeautifulSoup(html, "html.parser")
-    table = soup.find("table", {"id": "ctl00_ContentPlaceHolder1_vtarayin"})
-    if table is None:
-        logger.error("Could not find the table on the page.")
-        return []
-    rows = table.find("tbody").find_all("tr")
-    data = []
-    for row in rows:
-        cols = row.find_all("td")
-        cols = [ele.text.strip() for ele in cols]
-        data.append(cols)
-    return data
 
 
 def split_address(address):
@@ -58,147 +39,116 @@ def filter_by_date(event_date_str):
         return False
 
 
-def parse_emergency_power_events(event_type, planned, language):
+async def parse_emergency_power_events():
     """
-    Parse all pages of power outages data for a specific event type, planned status, and language.
-
-    Args:
-        event_type (str): The type of event to parse.
-        planned (bool): The planned status of the outages.
-        language (str): The language code for the data.
-
-    Returns:
-        None: If there is an error starting or restarting the WebDriver.
+    Asynchronously parse power outages data for all supported languages.
     """
-    driver = None
-    try:
-        driver = start_webdriver()
-    except (NewConnectionError, MaxRetryError) as e:
-        logger.error(f"Failed to start WebDriver: {e}")
-        try:
-            driver = restart_webdriver()
-        except (NewConnectionError, MaxRetryError) as e:
-            logger.error(f"Failed to restart WebDriver: {e}")
-            return  # If both start and restart fail, exit the function
-
-    if driver is None:
-        logger.error("WebDriver is not initialized.")
-        return
-
-    try:
-        driver.get(POWER_OUTAGE_URL.format(lang=language.code))
-        logger.info(f"URL: {POWER_OUTAGE_URL.format(lang=language.code)}")
-
-        new_records_count = 0
-
-        while True:
-            data = parse_table(driver)
-            if not data:
-                break
-
-            session = Session()
-            for event in data:
-                area, district, house_number = split_address(event[1])
-                start_time = normalize_string(event[0])
-                area = normalize_string(area)
-                district = normalize_string(district)
-                house_number = normalize_string(house_number)
-
-                if not filter_by_date(start_time):
-                    continue
-
-                event_hash = compute_hash(
-                    event_type,
-                    area,
-                    district,
-                    house_number,
-                    start_time,
-                    language,
-                    planned,
-                )
-
-                existing_event = session.query(Event).filter_by(hash=event_hash).first()
-                if existing_event:
-                    continue  # Skip this event, it's already in the database
-
-                new_event = Event(
-                    event_type=event_type,
-                    area=area,
-                    district=district,
-                    house_number=house_number,
-                    start_time=start_time,
-                    end_time=None,
-                    language=language,
-                    planned=planned,
-                    hash=event_hash,
-                    timestamp=datetime.now(),
-                )
-                session.add(new_event)
-                new_records_count += 1
-
-            session.commit()
-            session.close()
-
-            try:
-                next_button = driver.find_element(
-                    By.CSS_SELECTOR, "a.paginate_button.next"
-                )
-                if "disabled" in next_button.get_attribute("class"):
-                    break
-                next_button.click()
-                time.sleep(0.5)  # Wait for the next page to load
-            except Exception as e:
-                logger.error(f"Error navigating to next page: {e}")
-                break
-
-        logger.info(
-            f"Added {new_records_count} new records to the database for language {language}."
-        )
-
-    except Exception as e:
-        logger.error(f"Error during parsing: {e}")
-    finally:
-        driver.quit()
-
-
-def parse_planned_power_events():
-    url = POWER_OUTAGE_URL.format(lang=1)
-    response = requests.get(url)
-    response.raise_for_status()
-
-    soup = BeautifulSoup(response.content, "html.parser")
-    content_element = soup.find("span", id="ctl00_ContentPlaceHolder1_attenbody")
-
-    if not content_element:
-        logger.error("Could not find the content element on the page.")
-        return
-
-    text_content = content_element.get_text(separator="\n").strip()
-    save_planned_event_to_db(text_content)
-
-
-def save_planned_event_to_db(text):
-    session = Session()
-    try:
-        event_hash = compute_hash(text)
-        event = Event(
-            event_type=EventType.POWER,
-            planned=True,
-            language=Language.RU,
-            text=text,
-            timestamp=datetime.now(),
-            hash=event_hash,
-        )
-        session.add(event)
-        session.commit()
-        logger.info("Planned power event saved successfully.")
-    except IntegrityError:
-        session.rollback()
-        logger.error("Failed to save planned power event due to IntegrityError.")
-    finally:
-        session.close()
-
-
-if __name__ == "__main__":
     for language in Language:
-        parse_emergency_power_events(EventType.POWER, planned=False, language=language)
+        logger.info(f"Parsing emergency power updates for language: {language.name}")
+        driver = None
+        try:
+            driver = await start_webdriver_async()
+        except (NewConnectionError, MaxRetryError) as e:
+            logger.error(f"Failed to start WebDriver: {e}")
+            try:
+                driver = await restart_webdriver_async()
+            except (NewConnectionError, MaxRetryError) as e:
+                logger.error(f"Failed to restart WebDriver: {e}")
+                return
+
+        if driver is None:
+            logger.error("WebDriver is not initialized.")
+            return
+
+        try:
+            driver.get(POWER_OUTAGE_URL.format(lang=language.code))
+            logger.info(f"URL: {POWER_OUTAGE_URL.format(lang=language.code)}")
+
+            new_records_count = 0
+
+            while True:
+                data = await parse_table_async(driver)
+                if not data:
+                    break
+
+                session = Session()
+                for event in data:
+                    area, district, house_number = split_address(event[1])
+                    start_time = normalize_string(event[0])
+                    area = normalize_string(area)
+                    district = normalize_string(district)
+                    house_number = normalize_string(house_number)
+
+                    if not filter_by_date(start_time):
+                        continue
+
+                    event_hash = compute_hash(
+                        EventType.POWER,
+                        area,
+                        district,
+                        house_number,
+                        start_time,
+                        language,
+                        False,
+                    )
+
+                    existing_event = (
+                        session.query(Event).filter_by(hash=event_hash).first()
+                    )
+                    if existing_event:
+                        continue  # Skip this event, it's already in the database
+
+                    new_event = Event(
+                        event_type=EventType.POWER,
+                        area=area,
+                        district=district,
+                        house_number=house_number,
+                        start_time=start_time,
+                        end_time=None,
+                        language=language,
+                        planned=False,
+                        hash=event_hash,
+                        timestamp=datetime.now(),
+                    )
+                    session.add(new_event)
+                    new_records_count += 1
+
+                await asyncio.get_event_loop().run_in_executor(None, session.commit)
+                session.close()
+
+                try:
+                    next_button = driver.find_element(
+                        By.CSS_SELECTOR, "a.paginate_button.next"
+                    )
+                    if "disabled" in next_button.get_attribute("class"):
+                        break
+                    next_button.click()
+                    await asyncio.sleep(0.5)  # Wait for the next page to load
+                except Exception as e:
+                    logger.error(f"Error navigating to next page: {e}")
+                    break
+
+            logger.info(
+                f"Added {new_records_count} new records to the database for language {language}."
+            )
+
+        except Exception as e:
+            logger.error(f"Error during parsing: {e}")
+        finally:
+            driver.quit()
+
+
+async def parse_table_async(driver):
+    html = driver.page_source
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.find("table", {"id": "ctl00_ContentPlaceHolder1_vtarayin"})
+    if table is None:
+        logger.error("Could not find the table on the page.")
+        return []
+    rows = table.find("tbody").find_all("tr")
+    data = []
+    for row in rows:
+        cols = row.find_all("td")
+        cols = [ele.text.strip() for ele in cols]
+        data.append(cols)
+    return data

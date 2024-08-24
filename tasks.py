@@ -3,12 +3,9 @@ from datetime import datetime
 import logging
 from telegram.error import RetryAfter, TimedOut, NetworkError
 from telegram.ext import CallbackContext
-from handle_posts import (
-    generate_emergency_power_posts,
-    generate_water_posts,
-)
+from handle_posts import generate_emergency_power_posts, generate_water_posts
 from db import Session
-from models import EventType, Language, Post
+from models import Post
 from parsers.power_parser import parse_emergency_power_events
 from parsers.water_parser import parse_water_events
 from utils import get_channel_id
@@ -19,11 +16,9 @@ MESSAGE_DELAY = 2  # seconds
 
 
 async def post_updates(context: CallbackContext) -> None:
-    """Process and send all unsent posts."""
     logger.info("Processing and sending unsent posts...")
     session = Session()
 
-    # Fetch all unsent posts sorted by creation time
     unsent_posts = (
         session.query(Post)
         .filter_by(posted_time=None)
@@ -34,7 +29,6 @@ async def post_updates(context: CallbackContext) -> None:
     for post in unsent_posts:
         result = await send_post_to_channel(context, post, session)
         if not result:
-            # If a critical error occurs, stop further processing
             break
 
     session.close()
@@ -44,7 +38,6 @@ async def post_updates(context: CallbackContext) -> None:
 async def send_post_to_channel(
     context: CallbackContext, post: Post, session: Session
 ) -> bool:
-    """Send a single post to the appropriate channel, handle retry on failure."""
     try:
         channel_id = get_channel_id(post.language)
 
@@ -53,13 +46,12 @@ async def send_post_to_channel(
                 chat_id=channel_id, text=post.text, parse_mode="MarkdownV2"
             )
             post.posted_time = datetime.now()
-            session.commit()
+            await asyncio.get_event_loop().run_in_executor(None, session.commit)
             logger.info(f"Sent post ID {post.id} to channel {channel_id}.")
         else:
             logger.error(f"Invalid channel ID for language {post.language}.")
             return False
 
-        # Delay between messages to avoid flood control
         await asyncio.sleep(MESSAGE_DELAY)
         return True
 
@@ -72,33 +64,28 @@ async def send_post_to_channel(
         return await send_post_to_channel(context, post, session)
 
     except (TimedOut, NetworkError) as e:
-        # Log the temporary error and return False to try sending next time
         logger.error(
             f"Temporary network error for post ID {post.id}: {e}. Will retry later."
         )
         return False
 
     except Exception as e:
-        # Log any other exceptions and stop the process
         logger.error(f"Failed to send post ID {post.id} due to unexpected error: {e}")
         session.rollback()
         return False
 
 
-async def check_for_updates(context: CallbackContext) -> None:
+async def update_and_create_power_posts(context: CallbackContext) -> None:
     logger.info("Checking for updates...")
-    for language in Language:
-        logger.info(f"Parsing emergency power updates for language: {language.name}")
-        parse_emergency_power_events(EventType.POWER, planned=False, language=language)
+    await parse_emergency_power_events()
 
     logger.info("Creating emergency power posts...")
-    generate_emergency_power_posts()
+    await generate_emergency_power_posts()
 
+
+async def update_and_create_water_posts(context: CallbackContext) -> None:
     logger.info("Parsing water updates")
-    parse_water_events()
+    await parse_water_events()
 
     logger.info("Creating water posts...")
-    generate_water_posts()
-
-    logger.info("Parsing planned power updates")
-    # parse_planned_power_events()
+    await generate_water_posts()

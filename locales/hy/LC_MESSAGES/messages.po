@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-24 09:04+0400\n"
+"POT-Creation-Date: 2024-08-24 11:59+0400\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: hy\n"
@@ -18,39 +18,35 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
 
-#: handle_posts.py:50 handle_posts.py:371
+#: handle_posts.py:41 handle_posts.py:350
 msgid "Scheduled water outage"
 msgstr "Պլանային ջրի անջատում"
 
-#: handle_posts.py:50 handle_posts.py:373
+#: handle_posts.py:41 handle_posts.py:352
 msgid "Emergency water outage"
 msgstr "Վթարային ջրի անջատում"
 
-#: handle_posts.py:52
+#: handle_posts.py:43
 msgid "Scheduled gas outage"
-msgstr "Պլանավորված գազի անջատում"
+msgstr "Պլանային գազի անջատում"
 
-#: handle_posts.py:52
+#: handle_posts.py:43
 msgid "Emergency gas outage"
-msgstr "Ավարիական գազի անջատում"
+msgstr "Վթարային գազի անջատում"
 
-#: handle_posts.py:63
+#: handle_posts.py:54
 msgid "House Numbers: {}\n"
-msgstr "Տների համարներ: {}\n"
+msgstr "Տների համարներ՝ {}\n"
 
-#: handle_posts.py:84
-msgid "Details: {}\n"
-msgstr "Մանրամասներ: {}\n"
-
-#: handle_posts.py:154
+#: handle_posts.py:125
 msgid "Emergency power outage"
 msgstr "Վթարային էլեկտրաէներգիայի անջատում"
 
-#: handle_posts.py:318
+#: handle_posts.py:300
 msgid "Scheduled power outage"
 msgstr "Պլանային էլեկտրաէներգիայի անջատում"
 
-#: handlers.py:58
+#: action_handlers/handlers.py:47
 msgid ""
 "Hello {}! I am a bot that tracks water and power outages. Choose your "
 "language:"
@@ -58,47 +54,27 @@ msgstr ""
 "Բարև՛ Ձեզ, {}։ Ես բոտ եմ, որը հետևում է ջրի և էլեկտրաէներգիայի "
 "անջատումներին։ Ընտրեք ձեր լեզուն՝"
 
-#: handlers.py:103 handlers.py:105
+#: action_handlers/handlers.py:106 action_handlers/handlers.py:108
 msgid "Language has been set to {}"
-msgstr "Լեզուն տեղադրված է՝ {}"
+msgstr "Լեզուն տեղադրվել է՝ {}"
 
-#: handlers.py:109
+#: action_handlers/handlers.py:115
 msgid "Invalid language code"
-msgstr ""
+msgstr "Անվավեր լեզվի կոդ"
 
-#: handlers.py:118
-msgid "Usage: /subscribe <keyword>"
-msgstr "Օգտագործում՝ /subscribe <բանալի բառ>"
-
-#: handlers.py:124
-msgid "Keyword must be between 3 and 256 characters long."
-msgstr "Բանալի բառը պետք է լինի 3-ից 256 նիշ երկարությամբ։"
-
-#: handlers.py:134
-msgid ""
-"Subscription for keyword \"{}\" already exists. Please choose another "
-"keyword."
-msgstr ""
-"Բանալի բառի «{}» բաժանորդագրությունը արդեն առկա է։ Խնդրում ենք ընտրել այլ"
-" բանալի բառ։"
-
-#: handlers.py:147
-msgid "You have subscribed to notifications for the keyword \"{}\"."
-msgstr "Դուք բաժանորդագրվել եք «{}» բանալի բառով ծանուցումներին։"
-
-#: handlers.py:161
+#: action_handlers/handlers.py:124
 msgid "Usage: /unsubscribe <keyword>"
 msgstr "Օգտագործում՝ /unsubscribe <բանալի բառ>"
 
-#: handlers.py:175
+#: action_handlers/handlers.py:138
 msgid "You have unsubscribed from notifications for the keyword \"{}\"."
 msgstr "Դուք դադարեցրել եք «{}» բանալի բառով ծանուցումները։"
 
-#: handlers.py:181
+#: action_handlers/handlers.py:144
 msgid "You are not subscribed to notifications for the keyword \"{}\"."
 msgstr "Դուք բաժանորդագրված չեք «{}» բանալի բառով ծանուցումներին։"
 
-#: handlers.py:200
+#: action_handlers/handlers.py:164
 msgid ""
 "Your subscriptions:\n"
 "{}"
@@ -106,7 +82,20 @@ msgstr ""
 "Ձեր բաժանորդագրությունները՝\n"
 "{}"
 
-#: handlers.py:202
+#: action_handlers/handlers.py:167
 msgid "You have no subscriptions."
 msgstr "Դուք չունեք բաժանորդագրություններ։"
+
+#: action_handlers/subscribe_handler.py:27
+#: action_handlers/subscribe_handler.py:41
+msgid "You have subscribed to {}."
+msgstr "Դուք բաժանորդագրվել եք {}-ին։"
+
+#: action_handlers/subscribe_handler.py:30
+msgid "Please provide a keyword to subscribe to:"
+msgstr "Խնդրում ենք մուտքագրել բաժանորդագրվելու բանալի բառ՝"
+
+#: action_handlers/subscribe_handler.py:52
+msgid "Subscription cancelled."
+msgstr "Բաժանորդագրությունը չեղարկված է։"
 

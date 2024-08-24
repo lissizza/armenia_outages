@@ -20,5 +20,10 @@ POWER_OUTAGE_URL = "https://www.ena.am/Info.aspx?id=5&lang={lang}"
 WATER_OUTAGE_URL = "https://interactive.vjur.am/"
 
 # Scheduling intervals and first run times
-CHECK_FOR_UPDATES_INTERVAL = int(os.getenv("CHECK_FOR_UPDATES_INTERVAL", 1800))
-POST_UPDATES_INTERVAL = int(os.getenv("POST_UPDATES_INTERVAL", 600))
+CHECK_FOR_POWER_UPDATES_INTERVAL = int(
+    os.getenv("CHECK_FOR_POWER_UPDATES_INTERVAL", 360)
+)
+CHECK_FOR_WATER_UPDATES_INTERVAL = int(
+    os.getenv("CHECK_FOR_WATER_UPDATES_INTERVAL", 3600)
+)
+POST_UPDATES_INTERVAL = int(os.getenv("POST_UPDATES_INTERVAL", 180))

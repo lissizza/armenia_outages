@@ -56,8 +56,10 @@ class BotUser(Base):
     username = Column(String, nullable=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
-    date_joined = Column(DateTime, default=datetime.now())
+    date_joined = Column(DateTime, default=datetime.now)
     language = Column(Enum(Language), default=Language.EN)
+
+    subscriptions = relationship("Subscription", back_populates="user")
 
     def __repr__(self):
         return f"<BotUser(user_id={self.user_id}, username={self.username}, language={self.language})>"
@@ -91,10 +93,11 @@ class Event(Base):
 class Subscription(Base):
     __tablename__ = "subscriptions"
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer)
+    user_id = Column(Integer, ForeignKey("bot_users.id"))
     keyword = Column(String)
-    language = Column(Enum(Language))
-    created = Column(DateTime, default=datetime.now().isoformat())
+    created = Column(DateTime, default=datetime.now)
+
+    user = relationship("BotUser", back_populates="subscriptions")
 
 
 class Post(Base):
@@ -103,7 +106,7 @@ class Post(Base):
     id = Column(Integer, primary_key=True)
     language = Column(Enum(Language), nullable=False)
     text = Column(String, nullable=False)
-    creation_time = Column(DateTime, default=datetime.now())
+    creation_time = Column(DateTime, default=datetime.now)
     posted_time = Column(DateTime, nullable=True)
 
     events = relationship(

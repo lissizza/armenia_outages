@@ -1,39 +1,35 @@
+import asyncio
+from datetime import datetime
 import logging
 from bs4 import BeautifulSoup
-from datetime import datetime
-from models import Event, EventType, Language
+from selenium.common.exceptions import WebDriverException
 from config import WATER_OUTAGE_URL
-from db import Session
+from parsers.webdriver_utils import start_webdriver_async
 from utils import compute_hash_by_text
-from parsers.webdriver_utils import start_webdriver, restart_webdriver
-from urllib3.exceptions import NewConnectionError, MaxRetryError
+from db import Session
+from models import Event, EventType, Language
 
 logger = logging.getLogger(__name__)
 
 
-def parse_water_events():
-    driver = start_webdriver()
+async def parse_water_events():
+    driver = await start_webdriver_async()
     if not driver:
         logger.error("Failed to start WebDriver.")
         return
 
     try:
-        driver.get(WATER_OUTAGE_URL)
-    except (NewConnectionError, MaxRetryError) as e:
-        logger.error(f"Connection error occurred: {e}")
-        driver.quit()
-        driver = restart_webdriver()
-        if not driver:
-            logger.error("Failed to restart WebDriver.")
-            return
-        try:
-            driver.get(WATER_OUTAGE_URL)
-        except (NewConnectionError, MaxRetryError) as e:
-            logger.error(f"Failed after restarting WebDriver: {e}")
-            driver.quit()
-            return
+        await asyncio.get_event_loop().run_in_executor(
+            None, driver.get, WATER_OUTAGE_URL
+        )
+    except WebDriverException as e:
+        logger.error(f"WebDriver error occurred: {e}")
+        await asyncio.get_event_loop().run_in_executor(None, driver.quit)
+        return
 
-    html = driver.page_source
+    html = await asyncio.get_event_loop().run_in_executor(
+        None, lambda: driver.page_source
+    )
     soup = BeautifulSoup(html, "html.parser")
 
     session = Session()
@@ -47,7 +43,6 @@ def parse_water_events():
 
         event_hash = compute_hash_by_text(text)
 
-        # Check if the hash already exists in the Event table
         existing_event = session.query(Event).filter_by(hash=event_hash).first()
         if existing_event:
             logger.info(
@@ -82,8 +77,9 @@ def parse_water_events():
     session.commit()
     session.close()
     logger.info(f"Added {new_records_count} new water events to the database.")
-    driver.quit()
+
+    await asyncio.get_event_loop().run_in_executor(None, driver.quit)
 
 
 if __name__ == "__main__":
-    parse_water_events()
+    asyncio.run(parse_water_events())

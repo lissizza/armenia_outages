@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -6,18 +7,32 @@ from config import CHROMEDRIVER_PATH
 logger = logging.getLogger(__name__)
 
 
-def start_webdriver():
+async def start_webdriver_async():
+    """
+    Asynchronously start the WebDriver with headless mode enforced.
+    """
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless")
+    options.add_argument("--headless=new")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--log-level=3")
     service = Service(CHROMEDRIVER_PATH)
-    driver = webdriver.Chrome(service=service, options=options)
+
+    # Use asyncio.to_thread to run blocking code in a thread
+    driver = await asyncio.to_thread(webdriver.Chrome, service=service, options=options)
     return driver
 
 
-def restart_webdriver(driver):
+async def restart_webdriver_async(driver):
+    """
+    Asynchronously restart the WebDriver with headless mode enforced.
+    """
     try:
-        driver.quit()
+        # Quit the WebDriver asynchronously
+        await asyncio.to_thread(driver.quit)
     except Exception as e:
         logger.error(f"Error while quitting WebDriver: {e}")
 
-    return start_webdriver()
+    # Start a new WebDriver asynchronously with enforced headless mode
+    return await start_webdriver_async()

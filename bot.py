@@ -1,5 +1,3 @@
-# bot.py
-
 import signal
 import nest_asyncio
 import logging
@@ -12,19 +10,24 @@ from telegram.ext import (
     CallbackQueryHandler,
     CallbackContext,
 )
-from config import TOKEN
+from config import (
+    CHECK_FOR_POWER_UPDATES_INTERVAL,
+    CHECK_FOR_WATER_UPDATES_INTERVAL,
+    POST_UPDATES_INTERVAL,
+    TOKEN,
+)
 from db import init_db
-from handlers import (
+from action_handlers.handlers import (
     start,
     set_language,
-    subscribe,
     list_subscriptions,
     unsubscribe,
 )
-from tasks import check_for_updates, post_updates
-from config import (
-    CHECK_FOR_UPDATES_INTERVAL,
-    POST_UPDATES_INTERVAL,
+from action_handlers.subscribe_handler import subscribe_handler
+from tasks import (
+    post_updates,
+    update_and_create_power_posts,
+    update_and_create_water_posts,
 )
 
 nest_asyncio.apply()
@@ -49,7 +52,7 @@ async def set_commands(application):
     await application.bot.set_my_commands(commands)
 
 
-async def periodic_task(interval, task_func, context):
+async def periodic_task(interval, task_func, context: CallbackContext):
     while True:
         try:
             await task_func(context)
@@ -60,7 +63,6 @@ async def periodic_task(interval, task_func, context):
 
 async def main() -> None:
     init_db()
-    # Configure the HTTPX client
     limits = httpx.Limits(max_keepalive_connections=50, max_connections=100)
     timeout = httpx.Timeout(20.0)
 
@@ -69,18 +71,16 @@ async def main() -> None:
     application = Application.builder().token(TOKEN).build()
     application.bot._httpx_client = httpx_client
 
-    # Set the bot commands
     await set_commands(application)
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(
         CallbackQueryHandler(set_language, pattern="^set_language ")
     )
-    application.add_handler(CommandHandler("subscribe", subscribe))
+    application.add_handler(subscribe_handler)
     application.add_handler(CommandHandler("unsubscribe", unsubscribe))
     application.add_handler(CommandHandler("list_subscriptions", list_subscriptions))
 
-    # Process any pending messages in the Redis queue
     application.add_error_handler(error_handler)
 
     logger.info("Bot started and ready to receive commands")
@@ -89,12 +89,18 @@ async def main() -> None:
     await application.start()
     await application.updater.start_polling()
 
-    # Run the tasks in parallel
     context = CallbackContext(application)
-    asyncio.create_task(periodic_task(POST_UPDATES_INTERVAL, post_updates, context))
     asyncio.create_task(
-        periodic_task(CHECK_FOR_UPDATES_INTERVAL, check_for_updates, context)
+        periodic_task(
+            CHECK_FOR_POWER_UPDATES_INTERVAL, update_and_create_power_posts, context
+        )
     )
+    asyncio.create_task(
+        periodic_task(
+            CHECK_FOR_WATER_UPDATES_INTERVAL, update_and_create_water_posts, context
+        )
+    )
+    asyncio.create_task(periodic_task(POST_UPDATES_INTERVAL, post_updates, context))
 
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()

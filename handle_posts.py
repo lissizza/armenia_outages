@@ -1,36 +1,26 @@
+import aiohttp
+import asyncio
 from datetime import datetime
-import gettext
 import logging
 import json
-import os
 from sqlite3 import IntegrityError
 import openai
 from sqlalchemy import func
-from utils import escape_markdown_v2, translate_text
+from utils import escape_markdown_v2, get_translation, translate_text
 from models import Event, EventType, Language, Post
 from db import Session
 
 logger = logging.getLogger(__name__)
+translations = get_translation()
 
 
-# Translation files setup
-locales_dir = os.path.join(os.path.dirname(__file__), "locales")
-translations = {}
+async def save_post_to_db(session, text, event_ids, language):
+    """Save a generated post to the database with multiple event_ids asynchronously."""
+    loop = asyncio.get_event_loop()
+    events = await loop.run_in_executor(
+        None, lambda: session.query(Event).filter(Event.id.in_(event_ids)).all()
+    )
 
-for lang in Language:
-    try:
-        translation = gettext.translation(
-            "messages", localedir=locales_dir, languages=[lang.value[0]]
-        )
-        translation.install()
-        translations[lang.name] = translation.gettext
-    except Exception as e:
-        logger.error(f"Error loading translation for {lang.value[0]}: {e}")
-
-
-def save_post_to_db(session, text, event_ids, language):
-    """Save a generated post to the database with multiple event_ids."""
-    events = session.query(Event).filter(Event.id.in_(event_ids)).all()
     post = Post(
         language=language,
         text=text,
@@ -38,7 +28,8 @@ def save_post_to_db(session, text, event_ids, language):
         posted_time=None,
         events=events,
     )
-    session.add(post)
+
+    await loop.run_in_executor(None, session.add, post)
     logger.debug(f"Post saved to the database: {text[:60]}...")
 
 
@@ -64,68 +55,49 @@ def generate_house_numbers_section(house_numbers, _):
     return ""
 
 
-def generate_message(event):
-    """Function to generate a message from a processed event."""
-    _ = translations[event.language.name]
-
-    title = generate_title(event.event_type, event.planned, event.language)
-    title = f"*{escape_markdown_v2(title)}*\n"
-    details = ""
-    if event.area:
-        details += f"*{escape_markdown_v2(event.area)}*\n"
-    if event.start_time:
-        details += f"*{escape_markdown_v2(event.start_time)}*\n"
-    if event.district:
-        details += f"{escape_markdown_v2(event.district)}\n"
-
-    details += generate_house_numbers_section(event.house_numbers, _)
-
-    if event.text:
-        details += _("Details: {}\n").format(escape_markdown_v2(event.text))
-
-    message_info = {"event_ids": [event.id], "text": f"{title}{details}"}
-
-    return message_info
-
-
-def generate_emergency_power_posts():
+async def generate_emergency_power_posts():
     session = Session()
 
     try:
-        grouped_events = (
-            session.query(
-                Event.start_time,
-                Event.area,
-                Event.district,
-                Event.language,
-                Event.event_type,
-                func.group_concat(Event.id).label("event_ids"),
-                func.group_concat(Event.house_number, ", ").label("house_numbers"),
-            )
-            .filter(
-                Event.processed == 0,
-                Event.event_type == EventType.POWER,
-                Event.planned == 0,
-                (Event.area.isnot(None))
-                | (Event.district.isnot(None))
-                | (Event.house_number.isnot(None)),
-            )
-            .group_by(
-                Event.start_time,
-                Event.area,
-                Event.district,
-                Event.language,
-                Event.event_type,
-            )
-            .all()
+        loop = asyncio.get_event_loop()
+
+        grouped_events = await loop.run_in_executor(
+            None,
+            lambda: (
+                session.query(
+                    Event.start_time,
+                    Event.area,
+                    Event.district,
+                    Event.language,
+                    Event.event_type,
+                    func.group_concat(Event.id).label("event_ids"),
+                    func.group_concat(Event.house_number, ", ").label("house_numbers"),
+                )
+                .filter(
+                    Event.processed == 0,
+                    Event.event_type == EventType.POWER,
+                    Event.planned == 0,
+                    (Event.area.isnot(None))
+                    | (Event.district.isnot(None))
+                    | (Event.house_number.isnot(None)),
+                )
+                .group_by(
+                    Event.start_time,
+                    Event.area,
+                    Event.district,
+                    Event.language,
+                    Event.event_type,
+                )
+                .all()
+            ),
         )
 
         logger.info(
             f"Found {len(grouped_events)} grouped unprocessed emergency power events."
         )
 
-        # group events for posts by area and start_time
         posts_by_area_and_time = {}
+
         for group in grouped_events:
             event_ids = group.event_ids.split(",")
             logger.info(f"Processing group with event IDs: {event_ids}")
@@ -143,7 +115,6 @@ def generate_emergency_power_posts():
                 }
             )
 
-        # make posts
         for (
             area,
             start_time,
@@ -179,7 +150,7 @@ def generate_emergency_power_posts():
                     event_message = f"{formatted_house_numbers}\n\n"
 
                 if len(post_text) + len(event_message) > 4096:
-                    save_post_to_db(session, post_text, all_event_ids, language)
+                    await save_post_to_db(session, post_text, all_event_ids, language)
                     post_text = (
                         f"*{title}*\n{formatted_area}\n{formatted_time}\n"
                         + event_message
@@ -190,10 +161,13 @@ def generate_emergency_power_posts():
                     all_event_ids.extend(event["event_ids"])
 
             if post_text:
-                save_post_to_db(session, post_text, all_event_ids, language)
+                await save_post_to_db(session, post_text, all_event_ids, language)
 
-            session.query(Event).filter(Event.id.in_(all_event_ids)).update(
-                {"processed": True}, synchronize_session=False
+            await loop.run_in_executor(
+                None,
+                lambda: session.query(Event)
+                .filter(Event.id.in_(all_event_ids))
+                .update({"processed": True}, synchronize_session=False),
             )
 
         session.commit()
@@ -206,7 +180,7 @@ def generate_emergency_power_posts():
         session.close()
 
 
-def parse_planned_power_event(text):
+async def parse_planned_power_event(text):
     logger.debug("Sending text to OpenAI for parsing.")
 
     prompt = """
@@ -285,20 +259,28 @@ Now, please parse the following text:
 {text}
 """
 
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=1000,
-        temperature=0.2,
-    )
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://api.openai.com/v1/completions",
+            json={
+                "model": "text-davinci-003",
+                "prompt": prompt,
+                "max_tokens": 1000,
+                "temperature": 0.2,
+            },
+            headers={"Authorization": f"Bearer {openai.api_key}"},
+        ) as response:
+            if response.status != 200:
+                logger.error(f"Failed to get completion from OpenAI: {response.status}")
+                return None
 
-    parsed_data = response.choices[0].text.strip()
-    logger.debug(f"Received parsed data: {parsed_data}")
+            response_data = await response.json()
+            parsed_data = response_data["choices"][0]["text"].strip()
+            logger.debug(f"Received parsed data: {parsed_data}")
+            return parsed_data
 
-    return parsed_data
 
-
-def generate_planned_power_post(parsed_event, original_event_id):
+async def generate_planned_power_post(parsed_event, original_event_id):
     session = Session()
 
     logger.debug(f"Processing parsed event: {parsed_event}")
@@ -328,7 +310,7 @@ def generate_planned_power_post(parsed_event, original_event_id):
             escaped_text = escape_markdown_v2(text)
 
             post_text = f"**{title}**\n**{escaped_location}**\n**{escaped_time}**\n\n{escaped_text}"
-            save_post_to_db(session, post_text, [original_event_id], lang_enum)
+            await save_post_to_db(session, post_text, [original_event_id], lang_enum)
 
         session.commit()
         logger.info("Posts have been committed to the database.")
@@ -340,24 +322,21 @@ def generate_planned_power_post(parsed_event, original_event_id):
         session.close()
 
 
-def generate_water_posts():
-    """
-    Generate posts for water events by translating them to RU and EN and creating posts directly.
-    Marks the original events as processed.
-    """
+async def generate_water_posts():
     session = Session()
-    unprocessed_water_events = (
-        session.query(Event)
+    unprocessed_water_events = await asyncio.get_event_loop().run_in_executor(
+        None,
+        lambda: session.query(Event)
         .filter(
             Event.processed == 0,
             Event.event_type == EventType.WATER,
             Event.language == Language.HY,
         )
-        .all()
+        .all(),
     )
 
     for event in unprocessed_water_events:
-        translation_ru, translation_en = translate_text(event.text)
+        translation_ru, translation_en = await translate_text(event.text)
         google_translations = [
             (Language.HY, event.text),
             (Language.RU, translation_ru),

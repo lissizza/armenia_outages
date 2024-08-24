@@ -1,19 +1,42 @@
+import asyncio
+import gettext
 import hashlib
 from enum import Enum
+import logging
+import os
 from deep_translator import GoogleTranslator
 
 from config import CHANNEL_ID_EN, CHANNEL_ID_HY, CHANNEL_ID_RU
-from db import Session
-from models import BotUser, Language
+from models import Language
+
+logger = logging.getLogger(__name__)
 
 translator_ru = GoogleTranslator(source="auto", target="ru")
 translator_en = GoogleTranslator(source="auto", target="en")
 
 
-def translate_text(text):
-    translation_ru = translator_ru.translate(text)
-    translation_en = translator_en.translate(text)
+async def translate_text(text):
+    loop = asyncio.get_event_loop()
+    translation_ru = await loop.run_in_executor(None, translator_ru.translate, text)
+    translation_en = await loop.run_in_executor(None, translator_en.translate, text)
     return translation_ru, translation_en
+
+
+def get_translation():
+    locales_dir = os.path.join(os.path.dirname(__file__), "locales")
+    translations = {}
+
+    for lang in Language:
+        try:
+            translation = gettext.translation(
+                "messages", localedir=locales_dir, languages=[lang.value[0]]
+            )
+            translation.install()
+            translations[lang.name] = translation.gettext
+        except Exception as e:
+            logger.error(f"Error loading translation for {lang.value[0]}: {e}")
+
+    return translations
 
 
 def normalize_string(value):
@@ -93,22 +116,6 @@ def combine_date_time(date_str, time_str):
     :return: Combined date and time string
     """
     return f"{date_str} {time_str}"
-
-
-def get_user_by_telegram_id(telegram_id):
-    """
-    Fetches the user from the database by Telegram user ID.
-
-    :param telegram_id: Telegram user ID (update.effective_user.id)
-    :return: BotUser instance or None if not found
-    """
-    session = Session()
-
-    user = session.query(BotUser).filter_by(user_id=telegram_id).first()
-
-    session.close()
-
-    return user
 
 
 def get_channel_id(language):
