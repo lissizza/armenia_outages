@@ -34,4 +34,4 @@ chmod +x /app/chromedriver/chromedriver
 
 # Start your application or bot
 echo "Starting the bot..."
-python3 your_script.py
+python3 bot.py
