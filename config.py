@@ -12,6 +12,7 @@ CHROMEDRIVER_PATH = os.getenv(
     os.path.expanduser("~/chromedriver/chromedriver-linux64/chromedriver"),
     # "/app/chromedriver/chromedriver" for heroku
 )
+CHROME_BINARY_PATH = os.getenv("CHROME_BINARY_PATH", "/usr/bin/google-chrome")
 CHANNEL_ID_HY = os.getenv("CHANNEL_ID_HY")
 CHANNEL_ID_RU = os.getenv("CHANNEL_ID_RU")
 CHANNEL_ID_EN = os.getenv("CHANNEL_ID_EN")
