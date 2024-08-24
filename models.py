@@ -117,6 +117,10 @@ class Subscription(Base):
     user = relationship("BotUser", back_populates="subscriptions")
     area = relationship("Area", back_populates="subscriptions")
 
+    __table_args__ = (
+        UniqueConstraint("user_id", "area_id", "keyword", name="_user_area_keyword_uc"),
+    )
+
 
 class Post(Base):
     __tablename__ = "posts"

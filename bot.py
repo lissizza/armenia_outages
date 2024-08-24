@@ -11,6 +11,7 @@ from telegram.ext import (
     CallbackContext,
     InlineQueryHandler,
 )
+from telegram.error import Forbidden, NetworkError
 from config import (
     CHECK_FOR_POWER_UPDATES_INTERVAL,
     CHECK_FOR_WATER_UPDATES_INTERVAL,
@@ -21,10 +22,13 @@ from db import init_db
 from action_handlers.handlers import (
     start,
     set_language,
-    list_subscriptions,
-    unsubscribe,
 )
-from action_handlers.subscribe_handler import inline_query, subscribe_handler
+from action_handlers.subscribe_handlers import (
+    inline_query,
+    subscribe_handler,
+    subscription_list,
+    unsubscribe_callback,
+)
 from tasks import (
     post_updates,
     update_and_create_power_posts,
@@ -40,15 +44,25 @@ logger = logging.getLogger(__name__)
 
 
 async def error_handler(update: Update, context: CallbackContext) -> None:
-    logger.error(msg="Exception while handling an update:", exc_info=context.error)
+    try:
+        raise context.error
+    except Forbidden:
+        logger.warning(f"Bot was blocked by user {update.effective_user.id}")
+    except NetworkError as e:
+        logger.error(f"Network error occurred: {e}. Retrying...")
+        await asyncio.sleep(5)
+    except Exception as e:
+        logger.error(
+            msg=f"An error occurred while handling an update: {e}",
+            exc_info=context.error,
+        )
 
 
 async def set_commands(application):
     commands = [
         BotCommand("start", "Start the bot"),
         BotCommand("subscribe", "Subscribe to notifications"),
-        BotCommand("unsubscribe", "Unsubscribe from notifications"),
-        BotCommand("list_subscriptions", "List your current subscriptions"),
+        BotCommand("subscription_list", "List your current subscriptions"),
     ]
     await application.bot.set_my_commands(commands)
 
@@ -80,8 +94,10 @@ async def main() -> None:
     )
     application.add_handler(subscribe_handler)
     application.add_handler(InlineQueryHandler(inline_query))
-    application.add_handler(CommandHandler("unsubscribe", unsubscribe))
-    application.add_handler(CommandHandler("list_subscriptions", list_subscriptions))
+    application.add_handler(CommandHandler("subscription_list", subscription_list))
+    application.add_handler(
+        CallbackQueryHandler(unsubscribe_callback, pattern=r"^unsubscribe_\d+$")
+    )
 
     application.add_error_handler(error_handler)
 

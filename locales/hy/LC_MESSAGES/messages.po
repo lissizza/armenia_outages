@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-24 17:40+0400\n"
+"POT-Creation-Date: 2024-08-24 19:30+0400\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: hy\n"
@@ -46,7 +46,7 @@ msgstr "Վթարային էլեկտրաէներգիայի անջատում"
 msgid "Scheduled power outage"
 msgstr "Պլանային էլեկտրաէներգիայի անջատում"
 
-#: action_handlers/handlers.py:47
+#: action_handlers/handlers.py:51
 msgid ""
 "Hello {}! I am a bot that tracks water and power outages. Choose your "
 "language:"
@@ -54,73 +54,47 @@ msgstr ""
 "Բարև՛ Ձեզ, {}։ Ես բոտ եմ, որը հետևում է ջրի և էլեկտրաէներգիայի "
 "անջատումներին։ Ընտրեք ձեր լեզուն՝"
 
-#: action_handlers/handlers.py:106 action_handlers/handlers.py:108
+#: action_handlers/handlers.py:110 action_handlers/handlers.py:112
 msgid "Language has been set to {}"
 msgstr "Լեզուն տեղադրվել է՝ {}"
 
-#: action_handlers/handlers.py:115
+#: action_handlers/handlers.py:119
 msgid "Invalid language code"
 msgstr "Անվավեր լեզվի կոդ"
 
-#: action_handlers/handlers.py:124
-msgid "Usage: /unsubscribe <keyword>"
-msgstr "Օգտագործում՝ /unsubscribe <բանալի բառ>"
-
-#: action_handlers/handlers.py:138
-msgid "You have unsubscribed from notifications for the keyword \"{}\"."
-msgstr "Դուք դադարեցրել եք «{}» բանալի բառով ծանուցումները։"
-
-#: action_handlers/handlers.py:144
-msgid "You are not subscribed to notifications for the keyword \"{}\"."
-msgstr "Դուք բաժանորդագրված չեք «{}» բանալի բառով ծանուցումներին։"
-
-#: action_handlers/handlers.py:164
-msgid ""
-"Your subscriptions:\n"
-"{}"
-msgstr ""
-"Ձեր բաժանորդագրությունները՝\n"
-"{}"
-
-#: action_handlers/handlers.py:167
-msgid "You have no subscriptions."
-msgstr "Դուք չունեք բաժանորդագրություններ։"
-
-#: action_handlers/subscribe_handler.py:54
+#: action_handlers/subscribe_handlers.py:56
 msgid "Enter a new area"
 msgstr "Մուտքագրեք նոր տարածք"
 
-#: action_handlers/subscribe_handler.py:58
+#: action_handlers/subscribe_handlers.py:60
 msgid "Please select an area from the list or enter a new one:"
 msgstr "Խնդրում ենք ընտրել տարածք ցանկից կամ մուտքագրել նոր տարածք՝"
 
-#: action_handlers/subscribe_handler.py:76
-#: action_handlers/subscribe_handler.py:80
+#: action_handlers/subscribe_handlers.py:73
 msgid "Please enter the name of the new area (letters only):"
 msgstr "Խնդրում ենք մուտքագրել նոր տարածքի անունը (միայն տառերով)՝"
 
-#: action_handlers/subscribe_handler.py:99
+#: action_handlers/subscribe_handlers.py:85
 msgid "The area name must contain only letters. Please try again:"
 msgstr "Տարածքի անվանումը պետք է պարունակի միայն տառեր։ Խնդրում ենք փորձել կրկին՝"
 
-#: action_handlers/subscribe_handler.py:119
+#: action_handlers/subscribe_handlers.py:103
 msgid "The area '{}' has been added and selected."
 msgstr "Տարածքը '{}' ավելացվել է և ընտրվել է։"
 
-#: action_handlers/subscribe_handler.py:146
+#: action_handlers/subscribe_handlers.py:124
 msgid "You selected the area: {}"
 msgstr "Դուք ընտրել եք '{}' տարածքը։"
 
-#: action_handlers/subscribe_handler.py:156
+#: action_handlers/subscribe_handlers.py:133
 msgid "Area not found. Please try again."
 msgstr "Տարածքը չի գտնվել։ Խնդրում ենք փորձել կրկին։"
 
-#: action_handlers/subscribe_handler.py:169
-#: action_handlers/subscribe_handler.py:172
-msgid "Please provide a keyword to subscribe to:"
-msgstr ""
+#: action_handlers/subscribe_handlers.py:146
+msgid "Please provide a keyword in your selected language ({})"
+msgstr "Խնդրում ենք մուտքագրել բանալի բառը ձեր ընտրված լեզվով ({})"
 
-#: action_handlers/subscribe_handler.py:190
+#: action_handlers/subscribe_handlers.py:171
 msgid ""
 "The keyword must contain only letters, digits, and be at least 3 "
 "characters long. Please try again:"
@@ -128,15 +102,47 @@ msgstr ""
 "Բանալի բառը պետք է պարունակի միայն տառեր և թվեր և լինի առնվազն 3 նիշ "
 "երկարությամբ։ Խնդրում ենք փորձել կրկին։"
 
-#: action_handlers/subscribe_handler.py:198
+#: action_handlers/subscribe_handlers.py:179
 msgid "Please select an area first."
 msgstr "Խնդրում ենք նախ ընտրել տարածք։"
 
-#: action_handlers/subscribe_handler.py:206
-msgid "You have subscribed to {}, {}."
-msgstr "Դուք բաժանորդագրվել եք '{}' և '{}'։"
-
-#: action_handlers/subscribe_handler.py:238
-msgid "Subscription cancelled."
+#: action_handlers/subscribe_handlers.py:208
+msgid ""
+"You are already subscribed to {}, {}. Please choose a different area or "
+"keyword."
 msgstr ""
+"Դուք արդեն բաժանորդագրվել եք {}, {}. Խնդրում ենք ընտրել այլ տարածք կամ "
+"բանալի բառ։"
+
+#: action_handlers/subscribe_handlers.py:223
+msgid "You have successfully subscribed to {}, {}."
+msgstr "Դուք հաջողությամբ բաժանորդագրվել եք {}, {}։"
+
+#: action_handlers/subscribe_handlers.py:232
+msgid ""
+"An error occurred while trying to save the subscription. Please try again"
+" later."
+msgstr ""
+"Բաժանորդագրությունը պահպանելիս տեղի ունեցավ սխալ։ Խնդրում ենք փորձել "
+"կրկին ավելի ուշ։"
+
+#: action_handlers/subscribe_handlers.py:244
+msgid "Subscription cancelled."
+msgstr "Բաժանորդագրությունը չեղարկված է։"
+
+#: action_handlers/subscribe_handlers.py:313
+msgid "Your subscriptions:"
+msgstr "Ձեր բաժանորդագրությունները՝"
+
+#: action_handlers/subscribe_handlers.py:315
+msgid "You have no subscriptions."
+msgstr "Դուք չունեք բաժանորդագրություններ։"
+
+#: action_handlers/subscribe_handlers.py:348
+msgid "You have unsubscribed from {}, {}."
+msgstr "Դուք դադարեցրել եք բաժանորդագրությունը {}, {}։"
+
+#: action_handlers/subscribe_handlers.py:352
+msgid "Subscription not found or already removed."
+msgstr "Բաժանորդագրությունը չի գտնվել կամ արդեն հեռացված է։"
 

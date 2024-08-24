@@ -2,10 +2,10 @@ import asyncio
 import os
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.error import Forbidden
 from telegram.ext import CallbackContext
+from telegram.error import Forbidden
 from db import Session
-from models import Subscription, Language
+from models import Language
 from user_logic import save_user, get_user_by_telegram_id
 from utils import get_translation
 
@@ -17,18 +17,13 @@ locales_dir = os.path.join(os.path.dirname(__file__), "locales")
 translations = get_translation()
 
 
-async def error_handler(update: Update, context: CallbackContext) -> None:
-    try:
-        raise context.error
-    except Forbidden:
-        logging.warning(f"Bot was blocked by user {update.effective_user.id}")
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-
-
 async def safe_reply_text(update: Update, text: str, **kwargs) -> None:
     try:
-        await update.message.reply_text(text, **kwargs)
+        if update.message:
+            await update.message.reply_text(text, **kwargs)
+        elif update.callback_query:
+            await update.callback_query.message.reply_text(text, **kwargs)
+            await update.callback_query.answer()
     except Forbidden:
         logging.warning(f"Bot was blocked by user {update.effective_user.id}")
 
@@ -113,57 +108,3 @@ async def set_language(update: Update, context: CallbackContext) -> None:
         _ = translations[user.language.name]
 
         await query.answer(_("Invalid language code"))
-
-
-async def unsubscribe(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.from_user.id
-    user = await get_user_by_telegram_id(user_id)
-    _ = translations[user.language.name]
-
-    if len(context.args) < 1:
-        await safe_reply_text(_("Usage: /unsubscribe <keyword>"))
-        return
-
-    keyword = context.args[0]
-
-    session = Session()
-    existing_subscription = (
-        session.query(Subscription).filter_by(user_id=user_id, keyword=keyword).first()
-    )
-
-    if existing_subscription:
-        session.delete(existing_subscription)
-        session.commit()
-        await safe_reply_text(
-            _('You have unsubscribed from notifications for the keyword "{}".').format(
-                keyword
-            )
-        )
-    else:
-        await safe_reply_text(
-            _('You are not subscribed to notifications for the keyword "{}".').format(
-                keyword
-            )
-        )
-
-    session.close()
-
-
-async def list_subscriptions(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.from_user.id
-    user = get_user_by_telegram_id(user_id)
-    _ = translations[user.language.name]
-
-    session = Session()
-    subscriptions = session.query(Subscription).filter_by(user_id=user_id).all()
-    if subscriptions:
-        subscription_list = "\n".join(
-            [f"{sub.keyword} ({sub.language})" for sub in subscriptions]
-        )
-        await safe_reply_text(
-            update, _("Your subscriptions:\n{}").format(subscription_list)
-        )
-    else:
-        await safe_reply_text(update, _("You have no subscriptions."))
-
-    session.close()
