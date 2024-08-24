@@ -22,3 +22,6 @@ unzip /app/chromedriver_linux64.zip -d /app/chromedriver
 chmod +x /app/chromedriver/chromedriver
 export PATH=$PATH:/app/chromedriver
 
+# Start the bot
+echo "Starting the bot..."
+python bot.py
