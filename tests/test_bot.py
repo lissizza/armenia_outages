@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 from telegram import User
-from bot import error_handler, main, set_commands
+from bot import error_handler, set_commands
 
 
 @pytest.mark.asyncio

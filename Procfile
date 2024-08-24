@@ -1,1 +1,1 @@
-worker: python bot.py
+worker: ./setup_and_run.sh
