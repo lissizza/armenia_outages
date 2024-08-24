@@ -11,6 +11,7 @@ CHROMEDRIVER_PATH = os.getenv(
     "CHROMEDRIVER_PATH",
     os.path.expanduser("~/chromedriver/chromedriver-linux64/chromedriver"),
     # "/app/.chromedriver/bin/chromedriver" for heroku
+)
 CHANNEL_ID_HY = os.getenv("CHANNEL_ID_HY")
 CHANNEL_ID_RU = os.getenv("CHANNEL_ID_RU")
 CHANNEL_ID_EN = os.getenv("CHANNEL_ID_EN")
