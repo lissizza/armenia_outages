@@ -14,11 +14,11 @@ sudo dpkg -i /app/google-chrome-stable_current_amd64.deb || sudo apt-get -fy ins
 
 # Check where Google Chrome is installed and set CHROME_BIN
 echo "Checking the location of Google Chrome binary after installation..."
-CHROME_PATH=$(which google-chrome || which google-chrome-stable)
+CHROME_BINARY_PATH=$(which google-chrome || which google-chrome-stable)
 
-if [ -n "$CHROME_PATH" ]; then
-    echo "Google Chrome found at: $CHROME_PATH"
-    export CHROME_BIN="$CHROME_PATH"
+if [ -n "$CHROME_BINARY_PATH" ]; then
+    echo "Google Chrome found at: $CHROME_BINARY_PATH"
+    export CHROME_BINARY_PATH="$CHROME_BINARY_PATH"
 else
     echo "Google Chrome not found in PATH after installation."
 fi
