@@ -3,62 +3,48 @@ import gettext
 import logging
 import json
 import os
+from sqlite3 import IntegrityError
 import openai
-from utils import escape_markdown_v2
-from models import EventType, Language, Post, ProcessedEvent
+from sqlalchemy import func
+from utils import escape_markdown_v2, translate_text
+from models import Event, EventType, Language, Post
 from db import Session
-from config import CHANNEL_ID_AM, CHANNEL_ID_EN, CHANNEL_ID_RU, REDIS_URL
-import redis
 
 logger = logging.getLogger(__name__)
-redis_client = redis.StrictRedis.from_url(REDIS_URL)
 
 
 # Translation files setup
 locales_dir = os.path.join(os.path.dirname(__file__), "locales")
+translations = {}
 
-translation_ru = gettext.translation("messages", locales_dir, languages=["ru"])
-translation_ru.install()
-ru = translation_ru.gettext
-
-translation_en = gettext.translation("messages", locales_dir, languages=["en"])
-translation_en.install()
-en = translation_en.gettext
-
-translations = {
-    "ru": ru,
-    "en": en,
-}
+for lang in Language:
+    try:
+        translation = gettext.translation(
+            "messages", localedir=locales_dir, languages=[lang.value[0]]
+        )
+        translation.install()
+        translations[lang.name] = translation.gettext
+    except Exception as e:
+        logger.error(f"Error loading translation for {lang.value[0]}: {e}")
 
 
 def save_post_to_db(session, text, event_ids, language):
     """Save a generated post to the database with multiple event_ids."""
+    events = session.query(Event).filter(Event.id.in_(event_ids)).all()
     post = Post(
-        language=language.value,
+        language=language,
         text=text,
         creation_time=datetime.now(),
         posted_time=None,
-        event_ids=event_ids,
+        events=events,
     )
     session.add(post)
     logger.debug(f"Post saved to the database: {text[:60]}...")
 
 
-def get_channel_id(language):
-    if language == Language.AM:
-        return CHANNEL_ID_AM
-    elif language == Language.RU:
-        return CHANNEL_ID_RU
-    elif language == Language.EN:
-        return CHANNEL_ID_EN
-    return None
-
-
 def generate_title(event_type, planned, language):
     """Generate the title for a message based on the event type and language."""
-    translation = translations[language.value[0]]
-    translation.install()
-    _ = translation.gettext
+    _ = translations[language.name]
 
     if event_type == EventType.WATER:
         title = _("Scheduled water outage") if planned else _("Emergency water outage")
@@ -80,10 +66,7 @@ def generate_house_numbers_section(house_numbers, _):
 
 def generate_message(event):
     """Function to generate a message from a processed event."""
-    lang_code = event.language.value[0]
-    translation = translations[lang_code]
-    translation.install()
-    _ = translation.gettext
+    _ = translations[event.language.name]
 
     title = generate_title(event.event_type, event.planned, event.language)
     title = f"*{escape_markdown_v2(title)}*\n"
@@ -106,89 +89,119 @@ def generate_message(event):
 
 
 def generate_emergency_power_posts():
-    """Generate grouped posts by area and start_time from processed events and save them to the database."""
     session = Session()
 
     try:
-        for language in Language:
-            emergency_events = (
-                session.query(ProcessedEvent)
-                .filter_by(
-                    sent=False,
-                    language=language,
-                    event_type=EventType.POWER,
-                    planned=False,
-                )
-                .order_by(ProcessedEvent.start_time)
-                .all()
+        grouped_events = (
+            session.query(
+                Event.start_time,
+                Event.area,
+                Event.district,
+                Event.language,
+                Event.event_type,
+                func.group_concat(Event.id).label("event_ids"),
+                func.group_concat(Event.house_number, ", ").label("house_numbers"),
+            )
+            .filter(
+                Event.processed == 0,
+                Event.event_type == EventType.POWER,
+                Event.planned == 0,
+                (Event.area.isnot(None))
+                | (Event.district.isnot(None))
+                | (Event.house_number.isnot(None)),
+            )
+            .group_by(
+                Event.start_time,
+                Event.area,
+                Event.district,
+                Event.language,
+                Event.event_type,
+            )
+            .all()
+        )
+
+        logger.info(
+            f"Found {len(grouped_events)} grouped unprocessed emergency power events."
+        )
+
+        # group events for posts by area and start_time
+        posts_by_area_and_time = {}
+        for group in grouped_events:
+            event_ids = group.event_ids.split(",")
+            logger.info(f"Processing group with event IDs: {event_ids}")
+
+            group_key = (group.area, group.start_time, group.language)
+            if group_key not in posts_by_area_and_time:
+                posts_by_area_and_time[group_key] = []
+
+            posts_by_area_and_time[group_key].append(
+                {
+                    "district": group.district,
+                    "house_numbers": group.house_numbers,
+                    "event_type": group.event_type,
+                    "event_ids": event_ids,
+                }
             )
 
-            if not emergency_events:
-                continue
-
-            first_event = emergency_events[0]
-            lang_code = first_event.language.value[0]
-            _ = translations[lang_code]
+        # make posts
+        for (
+            area,
+            start_time,
+            language,
+        ), events_group in posts_by_area_and_time.items():
+            _ = translations[language.name]
 
             title = _("Emergency power outage")
 
-            grouped_events = {}
-            for event in emergency_events:
-                group_key = (event.area, event.start_time)
-                if group_key not in grouped_events:
-                    grouped_events[group_key] = []
-                grouped_events[group_key].append(event)
+            formatted_area = f"*{escape_markdown_v2(area.strip())}*" if area else ""
+            formatted_time = (
+                f"*{escape_markdown_v2(start_time.strip())}*" if start_time else ""
+            )
 
-            for (area, start_time), events_group in grouped_events.items():
-                formatted_area = f"*{escape_markdown_v2(area.strip())}*" if area else ""
-                formatted_time = (
-                    f"*{escape_markdown_v2(start_time.strip())}*" if start_time else ""
-                )
+            post_text = f"*{title}*\n{formatted_area}\n{formatted_time}\n"
+            all_event_ids = []
 
-                post_text = f"*{title}*\n{formatted_area}\n{formatted_time}\n"
-                event_ids = []
+            sorted_events = sorted(events_group, key=lambda e: e["district"] or "")
 
-                sorted_events = sorted(events_group, key=lambda e: e.district or "")
-
-                for event in sorted_events:
-                    if event.district:
-                        formatted_district = escape_markdown_v2(event.district.strip())
-                        formatted_house_numbers = generate_house_numbers_section(
-                            escape_markdown_v2(event.house_numbers), _
-                        ).strip()
-                        event_message = (
-                            f"{formatted_district}\n{formatted_house_numbers}\n\n"
-                        )
-                    else:
-                        formatted_house_numbers = generate_house_numbers_section(
-                            escape_markdown_v2(event.house_numbers), _
-                        ).strip()
-                        event_message = f"{formatted_house_numbers}\n\n"
-
-                    if len(post_text) + len(event_message) > 4096:
-                        save_post_to_db(
-                            session, post_text, event_ids, events_group[0].language
-                        )
-                        post_text = (
-                            f"*{title}*\n{formatted_area}\n{formatted_time}\n"
-                            + event_message
-                        )
-                        event_ids = [event.id]
-                    else:
-                        post_text += event_message
-                        event_ids.append(event.id)
-
-                if post_text:
-                    save_post_to_db(
-                        session, post_text, event_ids, events_group[0].language
+            for event in sorted_events:
+                if event["district"]:
+                    formatted_district = escape_markdown_v2(event["district"].strip())
+                    formatted_house_numbers = generate_house_numbers_section(
+                        escape_markdown_v2(event["house_numbers"]), _
+                    ).strip()
+                    event_message = (
+                        f"{formatted_district}\n{formatted_house_numbers}\n\n"
                     )
+                else:
+                    formatted_house_numbers = generate_house_numbers_section(
+                        escape_markdown_v2(event["house_numbers"]), _
+                    ).strip()
+                    event_message = f"{formatted_house_numbers}\n\n"
+
+                if len(post_text) + len(event_message) > 4096:
+                    save_post_to_db(session, post_text, all_event_ids, language)
+                    post_text = (
+                        f"*{title}*\n{formatted_area}\n{formatted_time}\n"
+                        + event_message
+                    )
+                    all_event_ids = event["event_ids"]
+                else:
+                    post_text += event_message
+                    all_event_ids.extend(event["event_ids"])
+
+            if post_text:
+                save_post_to_db(session, post_text, all_event_ids, language)
+
+            session.query(Event).filter(Event.id.in_(all_event_ids)).update(
+                {"processed": True}, synchronize_session=False
+            )
 
         session.commit()
         logger.info("All posts have been saved to the database.")
 
     except Exception as e:
         session.rollback()
-        logger.error(f"Error while generating and saving posts: {e}")
+        logger.error(f"Error while processing events and generating posts: {e}")
     finally:
         session.close()
 
@@ -294,14 +307,15 @@ def generate_planned_power_post(parsed_event, original_event_id):
         event_data_list = json.loads(parsed_event)
         logger.debug(f"Event data parsed as JSON: {event_data_list}")
 
-        title = _("Scheduled power outage")
-
         for event_data in event_data_list:
             start_time = event_data["start_time"]
             end_time = event_data["end_time"]
             location = event_data["location"]
             text = event_data["text"]
             language = event_data["language"]
+
+            _ = translations[language.name]
+            title = _("Scheduled power outage")
 
             try:
                 lang_enum = Language[language]
@@ -324,3 +338,64 @@ def generate_planned_power_post(parsed_event, original_event_id):
         session.rollback()
     finally:
         session.close()
+
+
+def generate_water_posts():
+    """
+    Generate posts for water events by translating them to RU and EN and creating posts directly.
+    Marks the original events as processed.
+    """
+    session = Session()
+    unprocessed_water_events = (
+        session.query(Event)
+        .filter(
+            Event.processed == 0,
+            Event.event_type == EventType.WATER,
+            Event.language == Language.HY,
+        )
+        .all()
+    )
+
+    for event in unprocessed_water_events:
+        translation_ru, translation_en = translate_text(event.text)
+        google_translations = [
+            (Language.HY, event.text),
+            (Language.RU, translation_ru),
+            (Language.EN, translation_en),
+        ]
+
+        try:
+            for language, text in google_translations:
+                _ = translations[language.name]
+                title = (
+                    _("Scheduled water outage")
+                    if event.planned
+                    else _("Emergency water outage")
+                )
+                escaped_text = escape_markdown_v2(text)
+                post_text = f"{title}\n{escaped_text}"
+
+                post = Post(
+                    language=language,
+                    text=post_text,
+                    creation_time=datetime.now(),
+                    posted_time=None,
+                    events=[event],
+                )
+                session.add(post)
+
+            session.commit()
+
+            event.processed = True
+            session.commit()
+
+        except IntegrityError as e:
+            session.rollback()
+            logger.error(
+                f"Failed to insert water event {event.id} due to IntegrityError: {e}"
+            )
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to process water event {event.id}: {e}")
+
+    session.close()

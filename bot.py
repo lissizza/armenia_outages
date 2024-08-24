@@ -22,12 +22,9 @@ from handlers import (
     unsubscribe,
 )
 from tasks import check_for_updates, post_updates
-from send_posts import process_redis_messages
 from config import (
     CHECK_FOR_UPDATES_INTERVAL,
     POST_UPDATES_INTERVAL,
-    CHECK_FOR_UPDATES_FIRST,
-    POST_UPDATES_FIRST,
 )
 
 nest_asyncio.apply()
@@ -50,6 +47,15 @@ async def set_commands(application):
         BotCommand("list_subscriptions", "List your current subscriptions"),
     ]
     await application.bot.set_my_commands(commands)
+
+
+async def periodic_task(interval, task_func, context):
+    while True:
+        try:
+            await task_func(context)
+        except Exception as e:
+            logger.error(f"Error in {task_func.__name__}: {e}")
+        await asyncio.sleep(interval)
 
 
 async def main() -> None:
@@ -75,19 +81,6 @@ async def main() -> None:
     application.add_handler(CommandHandler("list_subscriptions", list_subscriptions))
 
     # Process any pending messages in the Redis queue
-    await process_redis_messages(application)
-
-    job_queue = application.job_queue
-
-    job_queue.run_repeating(
-        check_for_updates,
-        interval=CHECK_FOR_UPDATES_INTERVAL,
-        first=CHECK_FOR_UPDATES_FIRST,
-    )
-    job_queue.run_repeating(
-        post_updates, interval=POST_UPDATES_INTERVAL, first=POST_UPDATES_FIRST
-    )
-
     application.add_error_handler(error_handler)
 
     logger.info("Bot started and ready to receive commands")
@@ -95,6 +88,13 @@ async def main() -> None:
     await application.initialize()
     await application.start()
     await application.updater.start_polling()
+
+    # Run the tasks in parallel
+    context = CallbackContext(application)
+    asyncio.create_task(periodic_task(POST_UPDATES_INTERVAL, post_updates, context))
+    asyncio.create_task(
+        periodic_task(CHECK_FOR_UPDATES_INTERVAL, check_for_updates, context)
+    )
 
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()

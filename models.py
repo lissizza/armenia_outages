@@ -1,4 +1,6 @@
+from datetime import datetime
 from sqlalchemy import (
+    BigInteger,
     Column,
     DateTime,
     ForeignKey,
@@ -30,6 +32,13 @@ class Language(PyEnum):
     def code(self):
         return self.value[1]
 
+    @classmethod
+    def from_code(cls, code):
+        for member in cls:
+            if member.name == code:
+                return member
+        raise ValueError(f"'{code}' is not a valid Language")
+
 
 post_event_association = Table(
     "post_event_association",
@@ -37,6 +46,21 @@ post_event_association = Table(
     Column("post_id", ForeignKey("posts.id"), primary_key=True),
     Column("event_id", ForeignKey("events.id"), primary_key=True),
 )
+
+
+class BotUser(Base):
+    __tablename__ = "bot_users"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(BigInteger, unique=True, nullable=False)
+    username = Column(String, nullable=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    date_joined = Column(DateTime, default=datetime.now())
+    language = Column(Enum(Language), default=Language.EN)
+
+    def __repr__(self):
+        return f"<BotUser(user_id={self.user_id}, username={self.username}, language={self.language})>"
 
 
 class Event(Base):
@@ -54,7 +78,7 @@ class Event(Base):
     planned = Column(Boolean)
 
     processed = Column(Boolean, default=False)
-    timestamp = Column(String)
+    timestamp = Column(DateTime, default=datetime.now())
     hash = Column(String, nullable=False)
 
     posts = relationship(
@@ -70,46 +94,16 @@ class Subscription(Base):
     user_id = Column(Integer)
     keyword = Column(String)
     language = Column(Enum(Language))
-
-
-class ProcessedEvent(Base):
-    __tablename__ = "processed_events"
-
-    id = Column(Integer, primary_key=True)
-    event_type = Column(Enum(EventType), nullable=False)
-    language = Column(Enum(Language), nullable=False)
-
-    area = Column(String, nullable=True)
-    district = Column(String, nullable=True)
-    house_numbers = Column(Text, nullable=True)
-    start_time = Column(String, nullable=True)
-    end_time = Column(String, nullable=True)
-    text = Column(Text, nullable=True)
-    planned = Column(Boolean)
-
-    timestamp = Column(String)
-    sent = Column(Boolean, default=False)
-    sent_time = Column(String)
-
-    __table_args__ = (
-        UniqueConstraint(
-            "start_time",
-            "area",
-            "district",
-            "event_type",
-            "language",
-            name="_unique_agg_event",
-        ),
-    )
+    created = Column(DateTime, default=datetime.now().isoformat())
 
 
 class Post(Base):
     __tablename__ = "posts"
 
     id = Column(Integer, primary_key=True)
-    language = Column(String(2), nullable=False)
+    language = Column(Enum(Language), nullable=False)
     text = Column(String, nullable=False)
-    creation_time = Column(DateTime, nullable=False)
+    creation_time = Column(DateTime, default=datetime.now())
     posted_time = Column(DateTime, nullable=True)
 
     events = relationship(

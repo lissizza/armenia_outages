@@ -55,7 +55,7 @@ def parse_water_events():
             )
             break
 
-        timestamp = datetime.now().isoformat()
+        timestamp = datetime.now()
         planned = "Պլանային" in heading
 
         event_am = Event(
@@ -65,7 +65,7 @@ def parse_water_events():
             house_number=None,
             start_time=None,
             end_time=None,
-            language=Language.AM,
+            language=Language.HY,
             planned=planned,
             hash=event_hash,
             text=text,

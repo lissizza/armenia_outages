@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-19 09:22+0400\n"
+"POT-Creation-Date: 2024-08-24 09:04+0400\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,89 +18,89 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
 
-#: handle_messages.py:44
+#: handle_posts.py:50 handle_posts.py:371
 msgid "Scheduled water outage"
 msgstr ""
 
-#: handle_messages.py:44
+#: handle_posts.py:50 handle_posts.py:373
 msgid "Emergency water outage"
 msgstr ""
 
-#: handle_messages.py:46
-msgid "Scheduled power outage"
-msgstr ""
-
-#: handle_messages.py:46
-msgid "Emergency power outage"
-msgstr ""
-
-#: handle_messages.py:48
+#: handle_posts.py:52
 msgid "Scheduled gas outage"
 msgstr ""
 
-#: handle_messages.py:48
+#: handle_posts.py:52
 msgid "Emergency gas outage"
 msgstr ""
 
-#: handle_messages.py:56
+#: handle_posts.py:63
 msgid "House Numbers: {}\n"
 msgstr ""
 
-#: handle_messages.py:82
+#: handle_posts.py:84
 msgid "Details: {}\n"
 msgstr ""
 
-#: handlers.py:31
+#: handle_posts.py:154
+msgid "Emergency power outage"
+msgstr ""
+
+#: handle_posts.py:318
+msgid "Scheduled power outage"
+msgstr ""
+
+#: handlers.py:58
 msgid ""
-"Hello! I am a bot that tracks water and power outages. Choose your "
+"Hello {}! I am a bot that tracks water and power outages. Choose your "
 "language:"
 msgstr ""
 
-#: handlers.py:51
-msgid "Invalid language choice."
-msgstr ""
-
-#: handlers.py:56 handlers.py:58
+#: handlers.py:103 handlers.py:105
 msgid "Language has been set to {}"
 msgstr ""
 
-#: handlers.py:68
+#: handlers.py:109
+msgid "Invalid language code"
+msgstr ""
+
+#: handlers.py:118
 msgid "Usage: /subscribe <keyword>"
 msgstr ""
 
-#: handlers.py:75
+#: handlers.py:124
 msgid "Keyword must be between 3 and 256 characters long."
 msgstr ""
 
-#: handlers.py:86
+#: handlers.py:134
 msgid ""
 "Subscription for keyword \"{}\" already exists. Please choose another "
 "keyword."
 msgstr ""
 
-#: handlers.py:99
+#: handlers.py:147
 msgid "You have subscribed to notifications for the keyword \"{}\"."
 msgstr ""
 
-#: handlers.py:113
+#: handlers.py:161
 msgid "Usage: /unsubscribe <keyword>"
 msgstr ""
 
-#: handlers.py:127
+#: handlers.py:175
 msgid "You have unsubscribed from notifications for the keyword \"{}\"."
 msgstr ""
 
-#: handlers.py:133
+#: handlers.py:181
 msgid "You are not subscribed to notifications for the keyword \"{}\"."
 msgstr ""
 
-#: handlers.py:153
+#: handlers.py:200
 msgid ""
 "Your subscriptions:\n"
 "{}"
 msgstr ""
 
-#: handlers.py:156
+#: handlers.py:202
 msgid "You have no subscriptions."
 msgstr ""
 

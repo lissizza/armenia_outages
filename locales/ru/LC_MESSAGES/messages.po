@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-19 09:22+0400\n"
+"POT-Creation-Date: 2024-08-24 09:04+0400\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -19,63 +19,63 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
 
-#: handle_messages.py:44
+#: handle_posts.py:50 handle_posts.py:371
 msgid "Scheduled water outage"
 msgstr "Плановое отключение воды"
 
-#: handle_messages.py:44
+#: handle_posts.py:50 handle_posts.py:373
 msgid "Emergency water outage"
 msgstr "Аварийное отключение воды"
 
-#: handle_messages.py:46
-msgid "Scheduled power outage"
-msgstr "Плановое отключение электричества"
-
-#: handle_messages.py:46
-msgid "Emergency power outage"
-msgstr "Аварийное отключение электричества"
-
-#: handle_messages.py:48
+#: handle_posts.py:52
 msgid "Scheduled gas outage"
 msgstr "Плановое отключение газа"
 
-#: handle_messages.py:48
+#: handle_posts.py:52
 msgid "Emergency gas outage"
 msgstr "Аварийное отключение газа"
 
-#: handle_messages.py:56
+#: handle_posts.py:63
 msgid "House Numbers: {}\n"
 msgstr "Номера домов: {}\n"
 
-#: handle_messages.py:82
+#: handle_posts.py:84
 msgid "Details: {}\n"
 msgstr "Подробности: {}\n"
 
-#: handlers.py:31
+#: handle_posts.py:154
+msgid "Emergency power outage"
+msgstr "Аварийное отключение электричества"
+
+#: handle_posts.py:318
+msgid "Scheduled power outage"
+msgstr "Плановое отключение электричества"
+
+#: handlers.py:58
 msgid ""
-"Hello! I am a bot that tracks water and power outages. Choose your "
+"Hello {}! I am a bot that tracks water and power outages. Choose your "
 "language:"
 msgstr ""
-"Привет! Я бот, который отслеживает отключения воды и электричества. "
+"Привет, {}! Я бот, который отслеживает отключения воды и электричества. "
 "Выберите ваш язык:"
 
-#: handlers.py:51
-msgid "Invalid language choice."
-msgstr "Недопустимый выбор языка."
-
-#: handlers.py:56 handlers.py:58
+#: handlers.py:103 handlers.py:105
 msgid "Language has been set to {}"
 msgstr "Язык установлен на {}"
 
-#: handlers.py:68
+#: handlers.py:109
+msgid "Invalid language code"
+msgstr ""
+
+#: handlers.py:118
 msgid "Usage: /subscribe <keyword>"
 msgstr "Использование: /subscribe <ключевое слово>"
 
-#: handlers.py:75
+#: handlers.py:124
 msgid "Keyword must be between 3 and 256 characters long."
 msgstr "Ключевое слово должно содержать от 3 до 256 символов."
 
-#: handlers.py:86
+#: handlers.py:134
 msgid ""
 "Subscription for keyword \"{}\" already exists. Please choose another "
 "keyword."
@@ -83,23 +83,23 @@ msgstr ""
 "Подписка на ключевое слово \"{}\" уже существует. Пожалуйста, выберите "
 "другое ключевое слово."
 
-#: handlers.py:99
+#: handlers.py:147
 msgid "You have subscribed to notifications for the keyword \"{}\"."
 msgstr "Вы подписались на уведомления по ключевому слову \"{}\"."
 
-#: handlers.py:113
+#: handlers.py:161
 msgid "Usage: /unsubscribe <keyword>"
 msgstr "Использование: /unsubscribe <ключевое слово>"
 
-#: handlers.py:127
+#: handlers.py:175
 msgid "You have unsubscribed from notifications for the keyword \"{}\"."
 msgstr "Вы отписались от уведомлений по ключевому слову \"{}\"."
 
-#: handlers.py:133
+#: handlers.py:181
 msgid "You are not subscribed to notifications for the keyword \"{}\"."
 msgstr "Вы не подписаны на уведомления по ключевому слову \"{}\"."
 
-#: handlers.py:153
+#: handlers.py:200
 msgid ""
 "Your subscriptions:\n"
 "{}"
@@ -107,19 +107,7 @@ msgstr ""
 "Ваши подписки:\n"
 "{}"
 
-#: handlers.py:156
+#: handlers.py:202
 msgid "You have no subscriptions."
 msgstr "У вас нет подписок."
-
-#~ msgid "Area: {}\n"
-#~ msgstr "Область: {}\n"
-
-#~ msgid "District: {}\n"
-#~ msgstr "Район: {}\n"
-
-#~ msgid "Start Time: {}\n"
-#~ msgstr "Время начала: {}\n"
-
-#~ msgid "End Time: {}\n"
-#~ msgstr "Время конца: {}\n"
 

@@ -131,7 +131,7 @@ def parse_emergency_power_events(event_type, planned, language):
                     language=language,
                     planned=planned,
                     hash=event_hash,
-                    timestamp=datetime.now().isoformat(),
+                    timestamp=datetime.now(),
                 )
                 session.add(new_event)
                 new_records_count += 1
@@ -186,7 +186,7 @@ def save_planned_event_to_db(text):
             planned=True,
             language=Language.RU,
             text=text,
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime.now(),
             hash=event_hash,
         )
         session.add(event)
