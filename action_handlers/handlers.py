@@ -96,15 +96,29 @@ async def set_language(update: Update, context: CallbackContext) -> None:
         await update_user_language(telegram_id, language)
 
         user = await get_user_by_telegram_id(telegram_id)
-        _ = translations[user.language.name]
 
-        await query.answer(_("Language has been set to {}").format(language_code))
-        await query.edit_message_text(
-            _("Language has been set to {}").format(language_code)
-        )
+        if user is None:
+            await save_user(query.from_user, language)
+            user = await get_user_by_telegram_id(telegram_id)
+
+        if user:
+            _ = translations[user.language.name]
+            await query.answer(_("Language has been set to {}").format(language_code))
+            await query.edit_message_text(
+                _("Language has been set to {}").format(language_code)
+            )
+        else:
+            logger.error(
+                f"User with telegram_id {telegram_id} could not be found or saved."
+            )
+            await query.answer(_("An error occurred. Please try again."))
+
     except ValueError as e:
         logger.error(e)
         user = await get_user_by_telegram_id(telegram_id)
-        _ = translations[user.language.name]
 
-        await query.answer(_("Invalid language code"))
+        if user:
+            _ = translations[user.language.name]
+            await query.answer(_("Invalid language code"))
+        else:
+            await query.answer(_("An error occurred. Please try again."))

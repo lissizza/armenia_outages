@@ -4,18 +4,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-DB_URI = os.getenv("DATABASE_URL", "sqlite:///events.db")
+OPENAI_AI_KEY = os.getenv("OPENAI_AI_KEY")
+DB_URI = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/armenia_outages"
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CHROMEDRIVER_PATH = os.getenv(
     "CHROMEDRIVER_PATH",
-    os.path.expanduser("~/chromedriver/chromedriver-linux64/chromedriver"),
-    # "/app/chromedriver/chromedriver" for heroku
+    # os.path.expanduser("~/chromedriver/chromedriver-linux64/chromedriver"),
+    "/usr/bin/chromedriver",  # for docker
 )
 CHROME_BINARY_PATH = os.getenv(
     "CHROME_BINARY_PATH",
     "/usr/bin/google-chrome",
-    # /app/.chrome-for-testing/chromedriver-linux64/chromedriver for heroku
 )
 CHANNEL_ID_HY = os.getenv("CHANNEL_ID_HY")
 CHANNEL_ID_RU = os.getenv("CHANNEL_ID_RU")

@@ -90,12 +90,12 @@ async def handle_area(update: Update, context: CallbackContext) -> int:
 
     new_area = await get_or_create_area(session, user_input, user.language)
 
-    translator = GoogleTranslator(source="auto", target="ru")
-    area_name_ru = translator.translate(new_area.name)
+    translator_ru = GoogleTranslator(source="auto", target="ru")
+    area_name_ru = translator_ru.translate(new_area.name)
     await get_or_create_area(session, area_name_ru, Language.RU)
 
-    translator = GoogleTranslator(source="auto", target="hy")
-    area_name_hy = translator.translate(new_area.name)
+    translator_hy = GoogleTranslator(source="auto", target="hy")
+    area_name_hy = translator_hy.translate(new_area.name)
     await get_or_create_area(session, area_name_hy, Language.HY)
 
     context.user_data["selected_area"] = new_area.id
@@ -142,19 +142,14 @@ async def ask_for_keyword(update: Update, context: CallbackContext) -> int:
     user = await get_user_by_telegram_id(update.effective_user.id)
     _ = translations[user.language.name]
 
-    # Add a message specifying the language for the keyword
-    language_note = _("Please provide a keyword in your selected language ({})").format(
-        user.language.name.upper()
-    )
+    request_message = _(
+        "Please provide a keyword in your selected language ({}) to subscribe to:"
+    ).format(user.language.name.upper())
 
     if update.message:
-        await update.message.reply_text(
-            f"{language_note}\n{_('Please provide a keyword to subscribe to:')}"
-        )
+        await update.message.reply_text(request_message)
     elif update.callback_query:
-        await update.callback_query.message.reply_text(
-            f"{language_note}\n{_('Please provide a keyword to subscribe to:')}"
-        )
+        await update.callback_query.edit_message_text(request_message)
         await update.callback_query.answer()
 
     return ASKING_FOR_KEYWORD

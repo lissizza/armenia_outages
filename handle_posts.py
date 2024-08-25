@@ -5,7 +5,7 @@ import logging
 import json
 from sqlite3 import IntegrityError
 import openai
-from sqlalchemy import func
+from sqlalchemy import String, func
 from utils import escape_markdown_v2, get_translation, translate_text
 from models import Area, Event, EventType, Language, Post
 from db import Session
@@ -136,13 +136,15 @@ async def generate_emergency_power_posts():
                     Event.district,
                     Event.language,
                     Event.event_type,
-                    func.group_concat(Event.id).label("event_ids"),
-                    func.group_concat(Event.house_number, ", ").label("house_numbers"),
+                    func.string_agg(func.cast(Event.id, String), ",").label(
+                        "event_ids"
+                    ),
+                    func.string_agg(Event.house_number, ", ").label("house_numbers"),
                 )
                 .filter(
-                    Event.processed == 0,
+                    Event.processed.is_(False),
                     Event.event_type == EventType.POWER,
-                    Event.planned == 0,
+                    Event.planned.is_(False),
                     (Event.area.isnot(None))
                     | (Event.district.isnot(None))
                     | (Event.house_number.isnot(None)),
@@ -252,7 +254,7 @@ async def generate_emergency_power_posts():
         session.close()
 
 
-async def parse_planned_power_event(text):
+async def parse_planned_power_event(content):
     logger.debug("Sending text to OpenAI for parsing.")
 
     prompt = """
@@ -328,7 +330,7 @@ The output should be:
 ]
 
 Now, please parse the following text:
-{text}
+{content}
 """
 
     async with aiohttp.ClientSession() as session:
@@ -414,7 +416,7 @@ async def generate_water_posts():
         None,
         lambda: session.query(Event)
         .filter(
-            Event.processed == 0,
+            Event.processed.is_(False),
             Event.event_type == EventType.WATER,
             Event.language == Language.HY,
         )
@@ -432,9 +434,12 @@ async def generate_water_posts():
         matched_area = None
 
         try:
-            for language, text in google_translations:
+            for language, content in google_translations:
                 for area in all_areas:
-                    if area.language == language and area.name.lower() in text.lower():
+                    if (
+                        area.language == language
+                        and area.name.lower() in content.lower()
+                    ):
                         matched_area = area
                         break
                 if matched_area:
@@ -445,14 +450,14 @@ async def generate_water_posts():
             else:
                 logger.warning(f"No area matched for event {event.id}")
 
-            for language, text in google_translations:
+            for language, content in google_translations:
                 _ = translations[language.name]
                 title = (
                     _("Scheduled water outage")
                     if event.planned
                     else _("Emergency water outage")
                 )
-                escaped_text = escape_markdown_v2(text)
+                escaped_text = escape_markdown_v2(content)
                 post_text = f"{title}\n{escaped_text}"
 
                 post = Post(
