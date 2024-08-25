@@ -6,7 +6,6 @@ load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 OPENAI_AI_KEY = os.getenv("OPENAI_AI_KEY")
 DB_URI = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/armenia_outages"
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CHROMEDRIVER_PATH = os.getenv(
     "CHROMEDRIVER_PATH",
     # os.path.expanduser("~/chromedriver/chromedriver-linux64/chromedriver"),

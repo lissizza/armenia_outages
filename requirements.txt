@@ -77,7 +77,6 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-telegram-bot==21.4
 pytz==2024.1
-redis==5.0.8
 regex==2024.7.24
 requests==2.32.3
 rfc3986==1.5.0
