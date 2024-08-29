@@ -1,12 +1,13 @@
-import asyncio
 import os
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from telegram.error import Forbidden
-from db import Session
 from models import Language
-from user_logic import save_user, get_user_by_telegram_id
+from user_logic import (
+    get_or_create_user,
+    update_or_create_user,
+)
 from utils import get_translation
 
 logger = logging.getLogger(__name__)
@@ -29,12 +30,7 @@ async def safe_reply_text(update: Update, text: str, **kwargs) -> None:
 
 
 async def start(update: Update, context: CallbackContext) -> None:
-    telegram_id = update.effective_user.id
-    user = await get_user_by_telegram_id(telegram_id)
-
-    if user is None:
-        await save_user(update.effective_user)
-        user = await get_user_by_telegram_id(telegram_id)
+    user = await get_or_create_user(update.effective_user)
 
     _ = translations[user.language.name]
 
@@ -52,39 +48,6 @@ async def start(update: Update, context: CallbackContext) -> None:
     )
 
 
-async def update_user_language(telegram_id: int, language: Language) -> None:
-    """
-    Asynchronously updates the language of the user in the database.
-
-    :param telegram_id: Telegram user ID
-    :param language: New language to be set
-    """
-    session = Session()
-    try:
-        user = await get_user_by_telegram_id(telegram_id)
-        if user:
-            logger.info(f"Current language for user {telegram_id}: {user.language}")
-            user.language = language
-
-            merged_user = session.merge(user)
-
-            await asyncio.get_event_loop().run_in_executor(None, session.commit)
-            logger.info(
-                f"Commit successful for user {telegram_id}. Language should now be: {merged_user.language}"
-            )
-            session.refresh(merged_user)
-            logger.info(
-                f"After commit, language for user {telegram_id} is: {merged_user.language}"
-            )
-        else:
-            logger.error(f"User with telegram_id {telegram_id} not found.")
-    except Exception as e:
-        session.rollback()
-        logger.error(f"Failed to update language for user {telegram_id}: {e}")
-    finally:
-        session.close()
-
-
 async def set_language(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     telegram_id = query.from_user.id
@@ -93,13 +56,7 @@ async def set_language(update: Update, context: CallbackContext) -> None:
     try:
         language = Language.from_code(language_code)
         logger.info(f"Setting language for user {telegram_id} to {language}")
-        await update_user_language(telegram_id, language)
-
-        user = await get_user_by_telegram_id(telegram_id)
-
-        if user is None:
-            await save_user(query.from_user, language)
-            user = await get_user_by_telegram_id(telegram_id)
+        user = await update_or_create_user(query.from_user, language=language)
 
         if user:
             _ = translations[user.language.name]
@@ -115,7 +72,7 @@ async def set_language(update: Update, context: CallbackContext) -> None:
 
     except ValueError as e:
         logger.error(e)
-        user = await get_user_by_telegram_id(telegram_id)
+        user = await get_or_create_user(query.from_user)
 
         if user:
             _ = translations[user.language.name]

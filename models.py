@@ -66,8 +66,7 @@ class Area(Base):
 class BotUser(Base):
     __tablename__ = "bot_users"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(BigInteger, unique=True, nullable=False)
+    user_id = Column(BigInteger, primary_key=True, unique=True, nullable=False)
     username = Column(String, nullable=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
@@ -109,7 +108,7 @@ class Subscription(Base):
     __tablename__ = "subscriptions"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("bot_users.id"))
+    user_id = Column(Integer, ForeignKey("bot_users.user_id"))
     keyword = Column(String, nullable=False)
     area_id = Column(Integer, ForeignKey("areas.id"), nullable=False)
     created = Column(DateTime, default=datetime.now)
