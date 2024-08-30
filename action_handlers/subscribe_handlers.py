@@ -37,9 +37,7 @@ ASKING_FOR_KEYWORD, ASKING_FOR_AREA, VALIDATING_AREA = range(3)
 
 def detect_language(text):
     try:
-        # Определение языка текста
         language_code = detect(text)
-        # Возвращаем упрощенный код языка (например, 'ru', 'en', 'hy')
         return language_code.split("-")[0]
     except LangDetectException:
         return None
@@ -272,7 +270,17 @@ async def handle_keyword(update: Update, context: CallbackContext) -> int:
         user = session.merge(user)
         _ = translations[user.language.name]
 
-        # Validate the keyword
+        detected_language = detect_language(keyword)
+        user_language_code = user.language.name.lower()
+
+        if detected_language and detected_language != user_language_code:
+            await update.message.reply_text(
+                _(
+                    "The keyword language does not match your selected language ({}). Please use the correct language."
+                ).format(user.language.name.upper())
+            )
+            return ASKING_FOR_KEYWORD
+
         if not re.match(r"^[a-zA-Zа-яА-ЯёЁ0-9\s]+$", keyword) or len(keyword) < 3:
             await update.message.reply_text(
                 _(
