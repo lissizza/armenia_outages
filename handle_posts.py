@@ -436,9 +436,10 @@ async def generate_water_posts():
         try:
             for language, content in google_translations:
                 for area in all_areas:
+                    cleaned_area = await clean_area_name(area.name)
                     if (
                         area.language == language
-                        and area.name.lower() in content.lower()
+                        and cleaned_area.lower() in content.lower()
                     ):
                         matched_area = area
                         break

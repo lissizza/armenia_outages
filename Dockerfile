@@ -6,8 +6,14 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install the dependencies and postgresql-client
-RUN apt-get update && apt-get install -y postgresql-client && \
-    pip install --no-cache-dir --upgrade pip && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    postgresql-client \
+    git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Use a base image with Chrome and Selenium pre-installed
@@ -34,5 +40,3 @@ COPY . /app
 # Set environment variables for Python to ensure output is not buffered
 ENV PYTHONUNBUFFERED=1
 
-# Command to start the application
-CMD ["python3", "bot.py"]

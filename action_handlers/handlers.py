@@ -1,5 +1,6 @@
 import os
 import logging
+from db import session_scope
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from telegram.error import Forbidden
@@ -30,22 +31,23 @@ async def safe_reply_text(update: Update, text: str, **kwargs) -> None:
 
 
 async def start(update: Update, context: CallbackContext) -> None:
-    user = await get_or_create_user(update.effective_user)
+    with session_scope() as session:
+        user = await get_or_create_user(update.effective_user, session=session)
+        user = session.merge(user)
+        _ = translations[user.language.name]
 
-    _ = translations[user.language.name]
-
-    await update.message.reply_text(
-        _(
-            "Hello {}! I am a bot that tracks water and power outages. Choose your language:"
-        ).format(user.first_name),
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [InlineKeyboardButton("English", callback_data="set_language EN")],
-                [InlineKeyboardButton("Русский", callback_data="set_language RU")],
-                [InlineKeyboardButton("Հայերեն", callback_data="set_language HY")],
-            ]
-        ),
-    )
+        await update.message.reply_text(
+            _(
+                "Hello {}! I am a bot that tracks water and power outages. Choose your language:"
+            ).format(user.first_name),
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [InlineKeyboardButton("English", callback_data="set_language EN")],
+                    [InlineKeyboardButton("Русский", callback_data="set_language RU")],
+                    [InlineKeyboardButton("Հայերեն", callback_data="set_language HY")],
+                ]
+            ),
+        )
 
 
 async def set_language(update: Update, context: CallbackContext) -> None:
@@ -56,26 +58,32 @@ async def set_language(update: Update, context: CallbackContext) -> None:
     try:
         language = Language.from_code(language_code)
         logger.info(f"Setting language for user {telegram_id} to {language}")
-        user = await update_or_create_user(query.from_user, language=language)
+        
+        with session_scope() as session:
+            user = await update_or_create_user(query.from_user, language=language, session=session)
+            user = session.merge(user)
 
-        if user:
-            _ = translations[user.language.name]
-            await query.answer(_("Language has been set to {}").format(language_code))
-            await query.edit_message_text(
-                _("Language has been set to {}").format(language_code)
-            )
-        else:
-            logger.error(
-                f"User with telegram_id {telegram_id} could not be found or saved."
-            )
-            await query.answer(_("An error occurred. Please try again."))
+            if user:
+                _ = translations[user.language.name]
+                await query.answer(_("Language has been set to {}").format(language_code))
+                await query.edit_message_text(
+                    _("Language has been set to {}").format(language_code)
+                )
+            else:
+                logger.error(
+                    f"User with telegram_id {telegram_id} could not be found or saved."
+                )
+                await query.answer(_("An error occurred. Please try again."))
 
     except ValueError as e:
         logger.error(e)
-        user = await get_or_create_user(query.from_user)
+        with session_scope() as session:
+            user = await get_or_create_user(query.from_user, session=session)
+            user = session.merge(user)  # Привязываем объект user к текущей сессии
 
-        if user:
-            _ = translations[user.language.name]
-            await query.answer(_("Invalid language code"))
-        else:
-            await query.answer(_("An error occurred. Please try again."))
+            if user:
+                _ = translations[user.language.name]
+                await query.answer(_("Invalid language code"))
+            else:
+                await query.answer(_("An error occurred. Please try again."))
+

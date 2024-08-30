@@ -24,6 +24,7 @@ from user_logic import get_or_create_user
 from utils import get_translation
 from handle_posts import get_or_create_area
 from deep_translator import GoogleTranslator
+from langdetect import detect, LangDetectException
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,16 @@ translations = get_translation()
 
 # Constants to define the state of the conversation
 ASKING_FOR_KEYWORD, ASKING_FOR_AREA, VALIDATING_AREA = range(3)
+
+
+def detect_language(text):
+    try:
+        # Определение языка текста
+        language_code = detect(text)
+        # Возвращаем упрощенный код языка (например, 'ru', 'en', 'hy')
+        return language_code.split("-")[0]
+    except LangDetectException:
+        return None
 
 
 async def subscribe(update: Update, context: CallbackContext) -> int:
@@ -53,21 +64,78 @@ async def subscribe(update: Update, context: CallbackContext) -> int:
         else:
             logger.info(f"Found {len(areas)} areas.")
 
+        first_letters = sorted(set(area.name[0].upper() for area in areas))
+        keyboard = [
+            [InlineKeyboardButton(letter, callback_data=f"letter_{letter}")]
+            for letter in first_letters
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        if update.message:
+            await update.message.reply_text(
+                _("Please select the first letter of the area:"),
+                reply_markup=reply_markup,
+            )
+        elif update.callback_query:
+            await update.callback_query.edit_message_text(
+                _("Please select the first letter of the area:"),
+                reply_markup=reply_markup,
+            )
+            await update.callback_query.answer()
+
+    return ASKING_FOR_AREA
+
+
+async def select_letter(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    await query.answer()
+
+    selected_letter = query.data.split("_")[1]
+
+    with session_scope() as session:
+        user = await get_or_create_user(query.from_user, session=session)
+        user = session.merge(user)
+        _ = translations[user.language.name]
+
+        areas = (
+            session.query(Area)
+            .filter(
+                Area.language == user.language, Area.name.ilike(f"{selected_letter}%")
+            )
+            .order_by(Area.name)
+            .all()
+        )
+
+        if not areas:
+            await query.edit_message_text(
+                _("No areas found starting with the letter: {}").format(selected_letter)
+            )
+            return ASKING_FOR_AREA
+
         keyboard = [
             [InlineKeyboardButton(area.name, callback_data=str(area.id))]
             for area in areas
         ]
         keyboard.append(
-            [InlineKeyboardButton(_("Enter a new area"), callback_data="new")]
+            [
+                InlineKeyboardButton(
+                    _("Back to letters"), callback_data="back_to_letters"
+                )
+            ]
         )
 
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text(
-            _("Please select an area from the list or enter a new one:"),
+        await query.edit_message_text(
+            _("Please select an area from the list:"),
             reply_markup=reply_markup,
         )
 
     return ASKING_FOR_AREA
+
+
+async def back_to_letters(update: Update, context: CallbackContext) -> int:
+    return await subscribe(update, context)
 
 
 async def ask_new_area(update: Update, context: CallbackContext) -> int:
@@ -118,24 +186,60 @@ async def select_area(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     await query.answer()
 
-    with session_scope() as session:
-        user = await get_or_create_user(query.from_user, session=session)
-        _ = translations[user.language.name]
+    data = query.data
+    if data.startswith("letter_"):
+        first_letter = data.split("_")[1].upper()
 
-        area_id = int(query.data)
-        area = session.query(Area).filter_by(id=area_id).first()
+        with session_scope() as session:
+            user = await get_or_create_user(query.from_user, session=session)
+            _ = translations[user.language.name]
 
-        if area:
-            context.user_data["selected_area"] = area.id
-            # await safe_reply_text(
-            #     update, _("You selected the area: {}").format(area.name)
-            # )
-            return await ask_for_keyword(update, context, session)
+            areas = (
+                session.query(Area)
+                .filter_by(language=user.language)
+                .filter(Area.name.ilike(f"{first_letter}%"))
+                .order_by(Area.name)
+                .all()
+            )
 
-        if query.data == "new":
-            return await ask_new_area(update, context)
+            keyboard = [
+                [InlineKeyboardButton(area.name, callback_data=str(area.id))]
+                for area in areas
+            ]
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        _("Back to letters"), callback_data="back_to_letters"
+                    )
+                ]
+            )
 
-        await safe_reply_text(update, _("Area not found. Please try again."))
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(
+                _("Please select an area from the list:"), reply_markup=reply_markup
+            )
+
+        return ASKING_FOR_AREA
+
+    elif data == "back_to_letters":
+        return await subscribe(update, context)
+
+    else:
+        area_id = int(data)
+        with session_scope() as session:
+            user = await get_or_create_user(query.from_user, session=session)
+            _ = translations[user.language.name]
+
+            area = session.query(Area).filter_by(id=area_id).first()
+
+            if area:
+                context.user_data["selected_area"] = area.id
+                await query.edit_message_text(
+                    _("You selected the area: {}").format(area.name)
+                )
+                return await ask_for_keyword(update, context, session)
+
+        await query.edit_message_text(_("Area not found. Please try again."))
         return ASKING_FOR_AREA
 
 
@@ -282,7 +386,11 @@ async def inline_query(update: Update, context: CallbackContext):
 subscribe_handler = ConversationHandler(
     entry_points=[CommandHandler("subscribe", subscribe)],
     states={
-        ASKING_FOR_AREA: [CallbackQueryHandler(select_area)],
+        ASKING_FOR_AREA: [
+            CallbackQueryHandler(select_letter, pattern="^letter_"),
+            CallbackQueryHandler(select_area),
+            CallbackQueryHandler(back_to_letters, pattern="^back_to_letters$"),
+        ],
         VALIDATING_AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_area)],
         ASKING_FOR_KEYWORD: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_keyword)
