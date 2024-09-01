@@ -19,11 +19,11 @@ from telegram.ext import (
 )
 from action_handlers.handlers import safe_reply_text
 from db import session_scope
+from utils import lingva_translate
 from models import BotUser, Subscription, Area, Language
 from user_logic import get_or_create_user
-from utils import get_translation
+from utils import detect_language_by_charset, get_translation
 from handle_posts import get_or_create_area
-from deep_translator import GoogleTranslator
 from langdetect import detect, LangDetectException
 
 logger = logging.getLogger(__name__)
@@ -162,14 +162,16 @@ async def handle_area(update: Update, context: CallbackContext) -> int:
 
         new_area = await get_or_create_area(session, user_input, user.language)
 
-        # Translate area name and save in other languages
-        translator_ru = GoogleTranslator(source="auto", target="ru")
-        area_name_ru = translator_ru.translate(new_area.name)
-        await get_or_create_area(session, area_name_ru, Language.RU)
+        supported_languages = [Language.RU, Language.EN, Language.HY]
 
-        translator_hy = GoogleTranslator(source="auto", target="hy")
-        area_name_hy = translator_hy.translate(new_area.name)
-        await get_or_create_area(session, area_name_hy, Language.HY)
+        for lang in supported_languages:
+            if lang == user.language:
+                continue
+
+            area_name_translated = lingva_translate(
+                new_area.name, source_lang="auto", target_lang=lang.text
+            )
+            await get_or_create_area(session, area_name_translated, lang)
 
         context.user_data["selected_area"] = new_area.id
         await safe_reply_text(
@@ -270,22 +272,21 @@ async def handle_keyword(update: Update, context: CallbackContext) -> int:
         user = session.merge(user)
         _ = translations[user.language.name]
 
-        detected_language = detect_language(keyword)
-        user_language_code = user.language.name.lower()
+        detected_language = detect_language_by_charset(keyword)
 
-        if detected_language and detected_language != user_language_code:
-            await update.message.reply_text(
-                _(
-                    "The keyword language does not match your selected language ({}). Please use the correct language."
-                ).format(user.language.name.upper())
-            )
-            return ASKING_FOR_KEYWORD
-
-        if not re.match(r"^[a-zA-Zа-яА-ЯёЁ0-9\s]+$", keyword) or len(keyword) < 3:
+        if not re.match(r"^[a-zA-Zа-яА-ЯёЁԱ-Ֆա-ֆ0-9\s]+$", keyword) or len(keyword) < 3:
             await update.message.reply_text(
                 _(
                     "The keyword must contain only letters, digits, and be at least 3 characters long. Please try again:"
                 )
+            )
+            return ASKING_FOR_KEYWORD
+
+        if detected_language and detected_language != user.language:
+            await update.message.reply_text(
+                _(
+                    "The keyword language does not match your selected language ({}). Please use the correct language."
+                ).format(user.language.name.upper())
             )
             return ASKING_FOR_KEYWORD
 
@@ -452,7 +453,15 @@ async def unsubscribe_callback(update: Update, context: CallbackContext) -> None
         user = session.merge(user)
         _ = translations[user.language.name]
 
-        subscription_id = int(query.data.split("_")[1])
+        try:
+            subscription_id = int(query.data.split("_")[1])
+        except ValueError:
+            await query.edit_message_text(_("Invalid subscription. Please try again."))
+            logger.error(
+                f"Invalid callback data received for unsubscription: {query.data}"
+            )
+            return
+
         subscription = session.query(Subscription).filter_by(id=subscription_id).first()
 
         if subscription:

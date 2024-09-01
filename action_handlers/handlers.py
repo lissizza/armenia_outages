@@ -79,7 +79,7 @@ async def set_language(update: Update, context: CallbackContext) -> None:
         logger.error(e)
         with session_scope() as session:
             user = await get_or_create_user(query.from_user, session=session)
-            user = session.merge(user)  # Привязываем объект user к текущей сессии
+            user = session.merge(user)
 
             if user:
                 _ = translations[user.language.name]

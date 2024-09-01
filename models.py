@@ -39,6 +39,10 @@ class Language(PyEnum):
                 return member
         raise ValueError(f"'{code}' is not a valid Language")
 
+    @property
+    def text(self):
+        return self.value[0]
+
 
 post_event_association = Table(
     "post_event_association",
@@ -132,6 +136,9 @@ class Post(Base):
     area_id = Column(Integer, ForeignKey("areas.id"), nullable=True)
 
     events = relationship(
-        "Event", secondary=post_event_association, back_populates="posts"
+        "Event",
+        secondary=post_event_association,
+        back_populates="posts",
+        cascade="all, delete",
     )
     area = relationship("Area", back_populates="posts")

@@ -76,11 +76,16 @@ async def send_post_to_channel(
 
 
 async def update_and_create_power_posts(context: CallbackContext) -> None:
-    logger.info("Checking for updates...")
-    await parse_emergency_power_events()
+    session = Session()
 
-    logger.info("Creating emergency power posts...")
-    await generate_emergency_power_posts()
+    try:
+        logger.info("Checking for updates...")
+        await parse_emergency_power_events(session)
+
+        logger.info("Creating emergency power posts...")
+        await generate_emergency_power_posts(session)
+    finally:
+        session.close()
 
 
 async def update_and_create_water_posts(context: CallbackContext) -> None:

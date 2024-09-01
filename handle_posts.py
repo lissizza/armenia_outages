@@ -6,7 +6,7 @@ import json
 from sqlite3 import IntegrityError
 import openai
 from sqlalchemy import String, func
-from utils import escape_markdown_v2, get_translation, translate_text
+from utils import escape_markdown_v2, get_translation, natural_sort_key, translate_text
 from models import Area, Event, EventType, Language, Post
 from db import Session
 from sqlalchemy.orm import Session as SQLAlchemySession
@@ -111,19 +111,22 @@ def generate_title(event_type, planned, language):
     return title
 
 
-def generate_house_numbers_section(house_numbers, _):
-    """Helper function to generate the house numbers section."""
+def generate_house_numbers_section(house_numbers, translate):
+    """
+    Helper function to generate and sort the house numbers section using natural sorting.
+    """
     if house_numbers:
-        house_numbers = ", ".join(
-            [num for num in house_numbers.split(", ") if num.strip()]
-        )
-        return _("House Numbers: {}\n").format(house_numbers)
+        house_numbers_list = [
+            hn.strip() for hn in house_numbers.split(",") if hn.strip()
+        ]
+        sorted_house_numbers = sorted(house_numbers_list, key=natural_sort_key)
+        house_numbers = ", ".join(sorted_house_numbers)
+
+        return translate("House Numbers: {}\n").format(house_numbers)
     return ""
 
 
-async def generate_emergency_power_posts():
-    session = Session()
-
+async def generate_emergency_power_posts(session):
     try:
         loop = asyncio.get_event_loop()
 
@@ -192,32 +195,24 @@ async def generate_emergency_power_posts():
 
             db_area = await get_or_create_area(session, area, language)
 
-            title = _("Emergency power outage")
+            title = f"⚡️ {_('Emergency power outage')} ⚡️"
 
             formatted_area = f"*{escape_markdown_v2(area.strip())}*" if area else ""
             formatted_time = (
                 f"*{escape_markdown_v2(start_time.strip())}*" if start_time else ""
             )
 
-            post_text = f"*{title}*\n{formatted_area}\n{formatted_time}\n"
+            post_text = f"*{title}*\n\n{formatted_area}\n{formatted_time}\n\n"
             all_event_ids = []
 
             sorted_events = sorted(events_group, key=lambda e: e["district"] or "")
 
             for event in sorted_events:
-                if event["district"]:
-                    formatted_district = escape_markdown_v2(event["district"].strip())
-                    formatted_house_numbers = generate_house_numbers_section(
-                        escape_markdown_v2(event["house_numbers"]), _
-                    ).strip()
-                    event_message = (
-                        f"{formatted_district}\n{formatted_house_numbers}\n\n"
-                    )
-                else:
-                    formatted_house_numbers = generate_house_numbers_section(
-                        escape_markdown_v2(event["house_numbers"]), _
-                    ).strip()
-                    event_message = f"{formatted_house_numbers}\n\n"
+                formatted_district = f"{escape_markdown_v2(event["district"].strip())}\n" if event["district"] else ""
+                formatted_house_numbers = f"{generate_house_numbers_section(
+                    escape_markdown_v2(event["house_numbers"]), _
+                ).strip()}\n" if event["house_numbers"] else ""
+                event_message = f"{formatted_district}{formatted_house_numbers}\n"
 
                 if len(post_text) + len(event_message) > 4096:
                     await save_post_to_db(
@@ -250,8 +245,7 @@ async def generate_emergency_power_posts():
     except Exception as e:
         session.rollback()
         logger.error(f"Error while processing events and generating posts: {e}")
-    finally:
-        session.close()
+        raise
 
 
 async def parse_planned_power_event(content):
@@ -371,7 +365,7 @@ async def generate_planned_power_post(parsed_event, original_event_id):
             language = event_data["language"]
 
             _ = translations[language.name]
-            title = _("Scheduled power outage")
+            title = f"⚡️ {_('Scheduled power outage')} ⚡️"
 
             try:
                 lang_enum = Language[language]
@@ -454,12 +448,19 @@ async def generate_water_posts():
             for language, content in google_translations:
                 _ = translations[language.name]
                 title = (
-                    _("Scheduled water outage")
+                    _("💧 Scheduled water outage 💧")
                     if event.planned
-                    else _("Emergency water outage")
+                    else _("💧 Emergency water outage 💧")
                 )
+
+                area_text = (
+                    f"*{escape_markdown_v2(matched_area.name)}*\n"
+                    if matched_area
+                    else ""
+                )
+
                 escaped_text = escape_markdown_v2(content)
-                post_text = f"{title}\n{escaped_text}"
+                post_text = f"*{title}*\n{area_text}{escaped_text}"
 
                 post = Post(
                     language=language,
