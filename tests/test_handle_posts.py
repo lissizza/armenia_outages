@@ -1,8 +1,8 @@
 import pytest
 from datetime import datetime, timedelta
 from models import Event, EventType, Language, Post, Area, post_event_association
-from handle_posts import generate_emergency_power_posts
-from utils import escape_markdown_v2
+from handle_posts import generate_emergency_power_posts, generate_water_posts
+from utils import escape_markdown_v2, get_translation
 
 
 @pytest.mark.asyncio
@@ -88,5 +88,79 @@ async def test_generate_emergency_power_posts(test_session):
     test_session.query(Post).delete()
     test_session.query(Event).delete()
     test_session.query(Area).delete()
+    test_session.commit()
+    test_session.close()
+
+
+@pytest.mark.asyncio
+async def test_generate_water_posts(test_session):
+    area_name_hy = "Աբովյան"
+    area_name_ru = "Абовян"
+    area_name_en = "Abovyan"
+
+    test_area = Area(name=area_name_hy, language=Language.HY)
+    test_session.add(test_area)
+    test_session.commit()
+
+    event_text_hy = (
+        "Վթարային ջրանջատում Կոտայքի մարզի Աբովյան քաղաքում օգոստոսի 31-ին "
+        "«Վեոլիա Ջուր» ընկերությունը տեղեկացնում է իր հաճախորդներին և սպառողներին, "
+        "որ վթարային աշխատանքներով պայմանավորված, ս.թ. օգոստոսի 31-ին ժամը 13:00-17:00-ն "
+        "կդադարեցվի Աբովյան քաղաքի 3,4,5,6,7,8 Մ/շ-ների, Սեվանի, Հանրապետության Պող. "
+        "ջրամատակարարումը: Ընկերությունը հայցում է սպառողների ներողամտությունը պատճառված "
+        "անհանգստության և կանխավ շնորհակալություն հայտնում ըմբռնման համար: 30.08.2024թ."
+    )
+    language = Language.HY
+    translations = get_translation()
+
+    test_event = Event(
+        event_type=EventType.WATER,
+        language=language,
+        text=event_text_hy,
+        planned=False,
+        processed=False,
+        timestamp=datetime.now(),
+        hash="testhash_water",
+    )
+
+    test_session.add(test_event)
+    test_session.commit()
+
+    await generate_water_posts(test_session)
+
+    posts = test_session.query(Post).all()
+
+    assert len(posts) == 3
+
+    for post in posts:
+        print("\nGenerated Water Post:\n", post.text)
+        _ = translations[post.language.name]
+
+        title = f'{_("*💧 Emergency water outage 💧*")}\n'
+
+        assert title in post.text
+
+        if post.language == Language.HY:
+            assert f"*{area_name_hy}*\n" in post.text
+        elif post.language == Language.RU:
+            assert f"*{area_name_ru}*\n" in post.text
+        elif post.language == Language.EN:
+            assert f"*{area_name_en}*\n" in post.text
+
+        assert "*31.08.2024 13:00-17:00*\n\n" in post.text
+
+        assert post.text.count(title) == 1
+        if post.language == Language.HY:
+            assert post.text.count(f"*{area_name_hy}*") == 1
+        elif post.language == Language.RU:
+            assert post.text.count(f"*{area_name_ru}*") == 1
+        elif post.language == Language.EN:
+            assert post.text.count(f"*{area_name_en}*") == 1
+
+        assert post.text.count("*31.08.2024 13:00-17:00*") == 1
+
+    test_session.query(post_event_association).delete()
+    test_session.query(Post).delete()
+    test_session.query(Event).delete()
     test_session.commit()
     test_session.close()

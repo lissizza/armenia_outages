@@ -6,13 +6,12 @@ from selenium.common.exceptions import WebDriverException
 from config import WATER_OUTAGE_URL
 from parsers.webdriver_utils import start_webdriver_async
 from utils import compute_hash_by_text
-from db import Session
 from models import Event, EventType, Language
 
 logger = logging.getLogger(__name__)
 
 
-async def parse_water_events():
+async def parse_water_events(session):
     driver = await start_webdriver_async()
     if not driver:
         logger.error("Failed to start WebDriver.")
@@ -32,7 +31,6 @@ async def parse_water_events():
     )
     soup = BeautifulSoup(html, "html.parser")
 
-    session = Session()
     new_records_count = 0
     events = []
 
@@ -75,7 +73,6 @@ async def parse_water_events():
     events.reverse()
     session.add_all(events)
     session.commit()
-    session.close()
     logger.info(f"Added {new_records_count} new water events to the database.")
 
     await asyncio.get_event_loop().run_in_executor(None, driver.quit)

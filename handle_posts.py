@@ -1,3 +1,4 @@
+import re
 import aiohttp
 import asyncio
 from datetime import datetime
@@ -6,7 +7,7 @@ import json
 from sqlite3 import IntegrityError
 import openai
 from sqlalchemy import String, func
-from utils import escape_markdown_v2, get_translation, natural_sort_key, translate_text
+from utils import escape_markdown_v2, get_translation, lingva_translate, natural_sort_key, translate_text
 from models import Area, Event, EventType, Language, Post
 from db import Session
 from sqlalchemy.orm import Session as SQLAlchemySession
@@ -400,8 +401,65 @@ async def generate_planned_power_post(parsed_event, original_event_id):
         session.close()
 
 
-async def generate_water_posts():
-    session = Session()
+def extract_date_time(text):
+    """
+    Extracts date and time from the given text using regex and returns them in the required format.
+    """
+    # Regex to find date (e.g., օգոստոսի 31-ին)
+    date_pattern = r'(հունվարի|փետրվարի|մարտի|ապրիլի|մայիսի|հունիսի|հուլիսի|օգոստոսի|սեպտեմբերի|հոկտեմբերի|նոյեմբերի|դեկտեմբերի) (\d{1,2})'
+    month_map = {
+        "հունվարի": "01",
+        "փետրվարի": "02",
+        "մարտի": "03",
+        "ապրիլի": "04",
+        "մայիսի": "05",
+        "հունիսի": "06",
+        "հուլիսի": "07",
+        "օգոստոսի": "08",
+        "սեպտեմբերի": "09",
+        "հոկտեմբերի": "10",
+        "նոյեմբերի": "11",
+        "դեկտեմբերի": "12",
+    }
+
+    # Regex to find time range (e.g., 13:00-17:00)
+    time_pattern = r'(\d{1,2}:\d{2})-(\d{1,2}:\d{2})'
+
+    # Find matches in the text
+    date_match = re.search(date_pattern, text)
+    time_match = re.search(time_pattern, text)
+
+    if date_match:
+        # Extract the month and day from the match
+        month_name = date_match.group(1)
+        day = date_match.group(2).zfill(2)  # Ensure day is always two digits
+        month = month_map.get(month_name)
+
+        # Use the current year
+        current_year = datetime.now().year
+
+        # Format the date as DD.MM.YYYY
+        formatted_date = f"{day}.{month}.{current_year}"
+    else:
+        formatted_date = None
+
+    if time_match:
+        # Extract start and end times
+        start_time = time_match.group(1)
+        end_time = time_match.group(2)
+
+        # Combine date and time
+        if formatted_date:
+            formatted_date_time = f"{formatted_date} {start_time}-{end_time}"
+        else:
+            formatted_date_time = None
+    else:
+        formatted_date_time = None
+
+    return formatted_date_time
+
+
+async def generate_water_posts(session):
     all_areas = await asyncio.get_event_loop().run_in_executor(
         None, lambda: session.query(Area).all()
     )
@@ -445,6 +503,8 @@ async def generate_water_posts():
             else:
                 logger.warning(f"No area matched for event {event.id}")
 
+            formatted_date_time = extract_date_time(event.text)
+
             for language, content in google_translations:
                 _ = translations[language.name]
                 title = (
@@ -453,14 +513,17 @@ async def generate_water_posts():
                     else _("💧 Emergency water outage 💧")
                 )
 
-                area_text = (
-                    f"*{escape_markdown_v2(matched_area.name)}*\n"
-                    if matched_area
-                    else ""
-                )
+                area_name_translated = matched_area.name if matched_area else ""
+                if matched_area and language != Language.HY:
+                    area_name_translated = lingva_translate(
+                        matched_area.name, "hy", language.name.lower()
+                    )
+
+                area_text = f"*{escape_markdown_v2(area_name_translated)}*\n" if area_name_translated else ""
+                date_time_text = f"*{formatted_date_time}*\n" if formatted_date_time else ""
 
                 escaped_text = escape_markdown_v2(content)
-                post_text = f"*{title}*\n{area_text}{escaped_text}"
+                post_text = f"*{title}*\n\n{area_text}{date_time_text}\n{escaped_text}"
 
                 post = Post(
                     language=language,

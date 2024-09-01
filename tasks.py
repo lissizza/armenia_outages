@@ -89,8 +89,12 @@ async def update_and_create_power_posts(context: CallbackContext) -> None:
 
 
 async def update_and_create_water_posts(context: CallbackContext) -> None:
-    logger.info("Parsing water updates")
-    await parse_water_events()
+    session = Session()
+    try:
+        logger.info("Parsing water updates")
+        await parse_water_events(session)
 
-    logger.info("Creating water posts...")
-    await generate_water_posts()
+        logger.info("Creating water posts...")
+        await generate_water_posts(session)
+    finally:
+        session.close()
