@@ -7,47 +7,37 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-24 19:30+0400\n"
+"POT-Creation-Date: 2024-09-04 09:22+0000\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
 "Language-Team: ru <LL@li.org>\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2)\n"
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.8.0\n"
+"Generated-By: Babel 2.12.1\n"
 
-#: handle_posts.py:107 handle_posts.py:451
-msgid "Scheduled water outage"
-msgstr "Плановое отключение воды"
-
-#: handle_posts.py:107 handle_posts.py:453
-msgid "Emergency water outage"
-msgstr "Аварийное отключение воды"
-
-#: handle_posts.py:109
-msgid "Scheduled gas outage"
-msgstr "Плановое отключение газа"
-
-#: handle_posts.py:109
-msgid "Emergency gas outage"
-msgstr "Аварийное отключение газа"
-
-#: handle_posts.py:120
-msgid "House Numbers: {}\n"
-msgstr "Номера домов: {}\n"
-
-#: handle_posts.py:193
+#: handle_posts.py:188
 msgid "Emergency power outage"
 msgstr "Аварийное отключение электричества"
 
-#: handle_posts.py:372
+#: handle_posts.py:358
 msgid "Scheduled power outage"
 msgstr "Плановое отключение электричества"
 
-#: action_handlers/handlers.py:51
+#: handle_posts.py:504
+#, fuzzy
+msgid "Scheduled water outage"
+msgstr "Плановое отключение электричества"
+
+#: handle_posts.py:506 tests/test_handle_posts.py:139
+#, fuzzy
+msgid "Emergency water outage"
+msgstr "Аварийное отключение воды"
+
+#: action_handlers/handlers.py:40
 msgid ""
 "Hello {}! I am a bot that tracks water and power outages. Choose your "
 "language:"
@@ -55,49 +45,64 @@ msgstr ""
 "Привет, {}! Я бот, который отслеживает отключения воды и электричества. "
 "Выберите ваш язык:"
 
-#: action_handlers/handlers.py:110 action_handlers/handlers.py:112
+#: action_handlers/handlers.py:68 action_handlers/handlers.py:70
 msgid "Language has been set to {}"
 msgstr "Язык установлен на {}"
 
-#: action_handlers/handlers.py:119
+#: action_handlers/handlers.py:76 action_handlers/handlers.py:88
+msgid "An error occurred. Please try again."
+msgstr "Район не найден. Пожалуйста, попробуйте снова."
+
+#: action_handlers/handlers.py:86
 msgid "Invalid language code"
 msgstr "Недопустимый код языка"
 
-#: action_handlers/subscribe_handlers.py:56
-msgid "Enter a new area"
-msgstr "Введите новый район"
+#: action_handlers/subscribe_handlers.py:75
+#: action_handlers/subscribe_handlers.py:80
+msgid "Please select the first letter of the area:"
+msgstr "Пожалуйста, выберите первую букву населенного пункта:"
 
-#: action_handlers/subscribe_handlers.py:60
-msgid "Please select an area from the list or enter a new one:"
-msgstr "Пожалуйста, выберите район из списка или введите новый:"
+#: action_handlers/subscribe_handlers.py:110
+msgid "No areas found starting with the letter: {}"
+msgstr "Не найдено населенных пунктов, начинающихся с буквы {"
 
-#: action_handlers/subscribe_handlers.py:73
+#: action_handlers/subscribe_handlers.py:121
+#: action_handlers/subscribe_handlers.py:212
+msgid "Back to letters"
+msgstr "Назад к выбору буквы"
+
+#: action_handlers/subscribe_handlers.py:128
+#: action_handlers/subscribe_handlers.py:219
+msgid "Please select an area from the list:"
+msgstr "Пожалуйста, сначала выберите район."
+
+#: action_handlers/subscribe_handlers.py:144
 msgid "Please enter the name of the new area (letters only):"
 msgstr "Пожалуйста, введите название нового района (только буквы):"
 
-#: action_handlers/subscribe_handlers.py:85
+#: action_handlers/subscribe_handlers.py:159
 msgid "The area name must contain only letters. Please try again:"
 msgstr ""
 "Название района должно содержать только буквы. Пожалуйста, попробуйте "
 "снова:"
 
-#: action_handlers/subscribe_handlers.py:103
+#: action_handlers/subscribe_handlers.py:179
 msgid "The area '{}' has been added and selected."
 msgstr "Район '{}' был добавлен и выбран."
 
-#: action_handlers/subscribe_handlers.py:124
+#: action_handlers/subscribe_handlers.py:238
 msgid "You selected the area: {}"
 msgstr "Вы выбрали район: {}"
 
-#: action_handlers/subscribe_handlers.py:133
+#: action_handlers/subscribe_handlers.py:242
 msgid "Area not found. Please try again."
 msgstr "Район не найден. Пожалуйста, попробуйте снова."
 
-#: action_handlers/subscribe_handlers.py:146
-msgid "Please provide a keyword in your selected language ({})"
+#: action_handlers/subscribe_handlers.py:254
+msgid "Please provide a keyword in your selected language ({}) to subscribe to:"
 msgstr "Пожалуйста, введите ключевое слово на выбранном языке ({})"
 
-#: action_handlers/subscribe_handlers.py:171
+#: action_handlers/subscribe_handlers.py:279
 msgid ""
 "The keyword must contain only letters, digits, and be at least 3 "
 "characters long. Please try again:"
@@ -105,11 +110,19 @@ msgstr ""
 "Ключевое слово должно содержать только буквы и цифры и быть не менее 3 "
 "символов. Пожалуйста, попробуйте снова:"
 
-#: action_handlers/subscribe_handlers.py:179
+#: action_handlers/subscribe_handlers.py:287
+msgid ""
+"The keyword language does not match your selected language ({}). Please "
+"use the correct language."
+msgstr ""
+"Язык ключевого слова не совпадает с выбранным языком ({}). Пожалуйста, "
+"используйте правильный язык."
+
+#: action_handlers/subscribe_handlers.py:295
 msgid "Please select an area first."
 msgstr "Пожалуйста, сначала выберите район."
 
-#: action_handlers/subscribe_handlers.py:208
+#: action_handlers/subscribe_handlers.py:326
 msgid ""
 "You are already subscribed to {}, {}. Please choose a different area or "
 "keyword."
@@ -117,11 +130,11 @@ msgstr ""
 "Вы уже подписаны на {}, {}. Пожалуйста, выберите другой район или "
 "ключевое слово."
 
-#: action_handlers/subscribe_handlers.py:223
+#: action_handlers/subscribe_handlers.py:341
 msgid "You have successfully subscribed to {}, {}."
 msgstr "Вы успешно подписались на {}, {}."
 
-#: action_handlers/subscribe_handlers.py:232
+#: action_handlers/subscribe_handlers.py:349
 msgid ""
 "An error occurred while trying to save the subscription. Please try again"
 " later."
@@ -129,23 +142,27 @@ msgstr ""
 "Произошла ошибка при попытке сохранить подписку. Пожалуйста, попробуйте "
 "снова позже."
 
-#: action_handlers/subscribe_handlers.py:244
+#: action_handlers/subscribe_handlers.py:359
 msgid "Subscription cancelled."
 msgstr "Подписка отменена."
 
-#: action_handlers/subscribe_handlers.py:313
+#: action_handlers/subscribe_handlers.py:439
 msgid "Your subscriptions:"
 msgstr "Ваши подписки:"
 
-#: action_handlers/subscribe_handlers.py:315
+#: action_handlers/subscribe_handlers.py:441
 msgid "You have no subscriptions."
 msgstr "У вас нет подписок."
 
-#: action_handlers/subscribe_handlers.py:348
+#: action_handlers/subscribe_handlers.py:459
+msgid "Invalid subscription. Please try again."
+msgstr "Район не найден. Пожалуйста, попробуйте снова."
+
+#: action_handlers/subscribe_handlers.py:473
 msgid "You have unsubscribed from {}, {}."
 msgstr "Вы отписались от {}, {}."
 
-#: action_handlers/subscribe_handlers.py:352
+#: action_handlers/subscribe_handlers.py:477
 msgid "Subscription not found or already removed."
 msgstr "Подписка не найдена или уже удалена."
 

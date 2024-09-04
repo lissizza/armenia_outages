@@ -7,8 +7,8 @@ import json
 from sqlite3 import IntegrityError
 import openai
 from sqlalchemy import String, func
-from utils import escape_markdown_v2, get_translation, lingva_translate, natural_sort_key, translate_text
-from models import Area, Event, EventType, Language, Post
+from utils import escape_markdown_v2, get_translation, natural_sort_key, translate_text
+from models import Area, Event, EventType, Language, Post, PostType
 from db import Session
 from sqlalchemy.orm import Session as SQLAlchemySession
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 translations = get_translation()
 
 
-async def save_post_to_db(session, text, event_ids, language, area):
+async def save_post_to_db(session, post_type, text, event_ids, language, area):
     """Save a generated post to the database with multiple event_ids asynchronously."""
     loop = asyncio.get_event_loop()
     events = await loop.run_in_executor(
@@ -25,6 +25,7 @@ async def save_post_to_db(session, text, event_ids, language, area):
 
     post = Post(
         language=language,
+        post_type=post_type,
         area=area,
         text=text,
         creation_time=datetime.now(),
@@ -98,18 +99,6 @@ async def get_or_create_area(
         await loop.run_in_executor(None, session.commit)
 
     return area
-
-
-def generate_title(event_type, planned, language):
-    """Generate the title for a message based on the event type and language."""
-    _ = translations[language.name]
-
-    if event_type == EventType.WATER:
-        title = _("Scheduled water outage") if planned else _("Emergency water outage")
-    elif event_type == EventType.GAS:
-        title = _("Scheduled gas outage") if planned else _("Emergency gas outage")
-
-    return title
 
 
 def generate_house_numbers_section(house_numbers, translate):
@@ -217,7 +206,7 @@ async def generate_emergency_power_posts(session):
 
                 if len(post_text) + len(event_message) > 4096:
                     await save_post_to_db(
-                        session, post_text, all_event_ids, language, db_area
+                        session, PostType.EMERGENCY_POWER, post_text, all_event_ids, language, db_area
                     )
                     post_text = (
                         f"*{title}*\n{formatted_area}\n{formatted_time}\n"
@@ -230,7 +219,7 @@ async def generate_emergency_power_posts(session):
 
             if post_text:
                 await save_post_to_db(
-                    session, post_text, all_event_ids, language, db_area
+                    session, PostType.EMERGENCY_POWER, post_text, all_event_ids, language, db_area
                 )
 
             await loop.run_in_executor(
@@ -385,6 +374,7 @@ async def generate_planned_power_post(parsed_event, original_event_id):
             )
             await save_post_to_db(
                 session,
+                post_type=PostType.PLANNED_POWER,
                 language=lang_enum,
                 area=db_area,
                 text=post_text,
@@ -459,11 +449,20 @@ def extract_date_time(text):
     return formatted_date_time
 
 
-async def generate_water_posts(session):
+async def find_area(session, header, language):
+    """
+    Find the area name in the given header text using the language-specific area names.
+    """
     all_areas = await asyncio.get_event_loop().run_in_executor(
-        None, lambda: session.query(Area).all()
+        None, lambda: session.query(Area).filter_by(language=language).all()
     )
+    for area in all_areas:
+        if area.name.lower() in header.lower():
+            return area.name
+    return ""
 
+
+async def generate_water_posts(session):
     unprocessed_water_events = await asyncio.get_event_loop().run_in_executor(
         None,
         lambda: session.query(Event)
@@ -483,23 +482,17 @@ async def generate_water_posts(session):
             (Language.EN, translation_en),
         ]
 
-        matched_area = None
+        area_name = None
 
         try:
             for language, content in google_translations:
-                for area in all_areas:
-                    cleaned_area = await clean_area_name(area.name)
-                    if (
-                        area.language == language
-                        and cleaned_area.lower() in content.lower()
-                    ):
-                        matched_area = area
-                        break
-                if matched_area:
+                header, text = content.split("\n\n", 1)
+                area_name = await find_area(session, header, language)
+                if area_name:
                     break
 
-            if matched_area:
-                logger.info(f"Area matched: {matched_area.name} for event {event.id}")
+            if area_name:
+                logger.info(f"Area matched: {area_name} for event {event.id}")
             else:
                 logger.warning(f"No area matched for event {event.id}")
 
@@ -508,34 +501,24 @@ async def generate_water_posts(session):
             for language, content in google_translations:
                 _ = translations[language.name]
                 title = (
-                    _("💧 Scheduled water outage 💧")
+                    f"💧 {_('Scheduled water outage')} 💧"
                     if event.planned
-                    else _("💧 Emergency water outage 💧")
+                    else f"💧 {_('Emergency water outage')} 💧"
                 )
 
-                area_name_translated = matched_area.name if matched_area else ""
-                if matched_area and language != Language.HY:
-                    area_name_translated = lingva_translate(
-                        matched_area.name, "hy", language.name.lower()
-                    )
-
-                area_text = f"*{escape_markdown_v2(area_name_translated)}*\n" if area_name_translated else ""
-                date_time_text = f"*{formatted_date_time}*\n" if formatted_date_time else ""
-
+                area_text = f"*{escape_markdown_v2(area_name)}*\n" if area_name else ""
+                date_time_text = f"*{escape_markdown_v2(formatted_date_time)}*\n" if formatted_date_time else ""
                 escaped_text = escape_markdown_v2(content)
                 post_text = f"*{title}*\n\n{area_text}{date_time_text}\n{escaped_text}"
 
-                post = Post(
-                    language=language,
+                await save_post_to_db(
+                    session,
+                    post_type=PostType.SCHEDULED_WATER if event.planned else PostType.EMERGENCY_WATER,
                     text=post_text,
-                    creation_time=datetime.now(),
-                    posted_time=None,
-                    events=[event],
-                    area=matched_area,
+                    event_ids=[event.id],
+                    language=language,
+                    area=area_name,
                 )
-                session.add(post)
-
-            session.commit()
 
             event.processed = True
             session.commit()
@@ -548,5 +531,4 @@ async def generate_water_posts(session):
         except Exception as e:
             session.rollback()
             logger.error(f"Failed to process water event {event.id}: {e}")
-
-    session.close()
+            raise

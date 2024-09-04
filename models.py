@@ -44,6 +44,15 @@ class Language(PyEnum):
         return self.value[0]
 
 
+class PostType(PyEnum):
+    EMERGENCY_POWER = "emergency_power"
+    EMERGENCY_WATER = "emergency_water"
+    EMERGENCY_GAS = "emergency_gas"
+    SCHEDULED_POWER = "scheduled_power"
+    SCHEDULED_WATER = "scheduled_water"
+    SCHEDULED_GAS = "scheduled_gas"
+
+
 post_event_association = Table(
     "post_event_association",
     Base.metadata,
@@ -130,6 +139,7 @@ class Post(Base):
 
     id = Column(Integer, primary_key=True)
     language = Column(Enum(Language), nullable=False)
+    post_type = Column(Enum(PostType), nullable=False)
     text = Column(String, nullable=False)
     creation_time = Column(DateTime, default=datetime.now)
     posted_time = Column(DateTime, nullable=True)

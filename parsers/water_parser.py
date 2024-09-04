@@ -37,7 +37,7 @@ async def parse_water_events(session):
     for panel in soup.find_all("div", class_="panel"):
         heading = panel.find("div", class_="panel-heading").get_text(strip=True)
         body = panel.find("div", class_="panel-body").get_text(strip=True)
-        text = heading + " " + body
+        text = f"{heading}\n\n{body}"
 
         event_hash = compute_hash_by_text(text)
 
@@ -69,7 +69,6 @@ async def parse_water_events(session):
         events.append(event_am)
         new_records_count += 1
 
-    # Reverse the events list before saving to the database
     events.reverse()
     session.add_all(events)
     session.commit()

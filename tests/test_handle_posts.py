@@ -136,7 +136,7 @@ async def test_generate_water_posts(test_session):
         print("\nGenerated Water Post:\n", post.text)
         _ = translations[post.language.name]
 
-        title = f'{_("*💧 Emergency water outage 💧*")}\n'
+        title = f'*💧 {_("Emergency water outage")} 💧*\n'
 
         assert title in post.text
 
