@@ -2,35 +2,36 @@ import asyncio
 from datetime import datetime
 import logging
 from bs4 import BeautifulSoup
-from selenium.common.exceptions import WebDriverException
-from config import WATER_OUTAGE_URL
-from parsers.webdriver_utils import start_webdriver_async
+import aiohttp
+from db import Session
 from utils import compute_hash_by_text
 from models import Event, EventType, Language
+from config import WATER_OUTAGE_URL
 
 logger = logging.getLogger(__name__)
 
 
+async def fetch_html(url):
+    """Fetch the HTML content of the given URL asynchronously using aiohttp."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                return await response.text()
+            else:
+                logger.error(
+                    f"Failed to fetch URL {url} with status: {response.status}"
+                )
+                return None
+
+
 async def parse_water_events(session):
-    driver = await start_webdriver_async()
-    if not driver:
-        logger.error("Failed to start WebDriver.")
+    """Parse water events from the fetched HTML page."""
+    html = await fetch_html(WATER_OUTAGE_URL)
+    if not html:
+        logger.error("Failed to retrieve HTML content.")
         return
 
-    try:
-        await asyncio.get_event_loop().run_in_executor(
-            None, driver.get, WATER_OUTAGE_URL
-        )
-    except WebDriverException as e:
-        logger.error(f"WebDriver error occurred: {e}")
-        await asyncio.get_event_loop().run_in_executor(None, driver.quit)
-        return
-
-    html = await asyncio.get_event_loop().run_in_executor(
-        None, lambda: driver.page_source
-    )
     soup = BeautifulSoup(html, "html.parser")
-
     new_records_count = 0
     events = []
 
@@ -74,8 +75,7 @@ async def parse_water_events(session):
     session.commit()
     logger.info(f"Added {new_records_count} new water events to the database.")
 
-    await asyncio.get_event_loop().run_in_executor(None, driver.quit)
-
 
 if __name__ == "__main__":
-    asyncio.run(parse_water_events())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(parse_water_events(Session()))
