@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-09-04 11:02+0000\n"
+"POT-Creation-Date: 2024-09-04 15:18+0000\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -95,43 +95,43 @@ msgstr ""
 msgid "Please select an area first."
 msgstr ""
 
-#: action_handlers/subscribe_handlers.py:326
+#: action_handlers/subscribe_handlers.py:327
 msgid ""
 "You are already subscribed to {}, {}. Please choose a different area or "
 "keyword."
 msgstr ""
 
-#: action_handlers/subscribe_handlers.py:341
+#: action_handlers/subscribe_handlers.py:342
 msgid "You have successfully subscribed to {}, {}."
 msgstr ""
 
-#: action_handlers/subscribe_handlers.py:349
+#: action_handlers/subscribe_handlers.py:350
 msgid ""
 "An error occurred while trying to save the subscription. Please try again"
 " later."
 msgstr ""
 
-#: action_handlers/subscribe_handlers.py:359
+#: action_handlers/subscribe_handlers.py:360
 msgid "Subscription cancelled."
 msgstr ""
 
-#: action_handlers/subscribe_handlers.py:439
+#: action_handlers/subscribe_handlers.py:440
 msgid "Your subscriptions:"
 msgstr ""
 
-#: action_handlers/subscribe_handlers.py:441
+#: action_handlers/subscribe_handlers.py:442
 msgid "You have no subscriptions."
 msgstr ""
 
-#: action_handlers/subscribe_handlers.py:459
+#: action_handlers/subscribe_handlers.py:460
 msgid "Invalid subscription. Please try again."
 msgstr ""
 
-#: action_handlers/subscribe_handlers.py:473
+#: action_handlers/subscribe_handlers.py:474
 msgid "You have unsubscribed from {}, {}."
 msgstr ""
 
-#: action_handlers/subscribe_handlers.py:477
+#: action_handlers/subscribe_handlers.py:478
 msgid "Subscription not found or already removed."
 msgstr ""
 

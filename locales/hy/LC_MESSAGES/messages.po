@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-09-04 11:02+0000\n"
+"POT-Creation-Date: 2024-09-04 15:18+0000\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: hy\n"
@@ -101,7 +101,7 @@ msgstr ""
 msgid "Please select an area first."
 msgstr "Խնդրում ենք նախ ընտրել տարածք։"
 
-#: action_handlers/subscribe_handlers.py:326
+#: action_handlers/subscribe_handlers.py:327
 msgid ""
 "You are already subscribed to {}, {}. Please choose a different area or "
 "keyword."
@@ -109,11 +109,11 @@ msgstr ""
 "Դուք արդեն բաժանորդագրվել եք {}, {}. Խնդրում ենք ընտրել այլ տարածք կամ "
 "բանալի բառ։"
 
-#: action_handlers/subscribe_handlers.py:341
+#: action_handlers/subscribe_handlers.py:342
 msgid "You have successfully subscribed to {}, {}."
 msgstr "Դուք հաջողությամբ բաժանորդագրվել եք {}, {}։"
 
-#: action_handlers/subscribe_handlers.py:349
+#: action_handlers/subscribe_handlers.py:350
 msgid ""
 "An error occurred while trying to save the subscription. Please try again"
 " later."
@@ -121,33 +121,33 @@ msgstr ""
 "Բաժանորդագրությունը պահպանելիս տեղի ունեցավ սխալ։ Խնդրում ենք փորձել "
 "կրկին ավելի ուշ։"
 
-#: action_handlers/subscribe_handlers.py:359
+#: action_handlers/subscribe_handlers.py:360
 msgid "Subscription cancelled."
 msgstr "Բաժանորդագրությունը չեղարկված է։"
 
-#: action_handlers/subscribe_handlers.py:439
+#: action_handlers/subscribe_handlers.py:440
 msgid "Your subscriptions:"
 msgstr "Ձեր բաժանորդագրությունները՝"
 
-#: action_handlers/subscribe_handlers.py:441
+#: action_handlers/subscribe_handlers.py:442
 msgid "You have no subscriptions."
 msgstr "Դուք չունեք բաժանորդագրություններ։"
 
-#: action_handlers/subscribe_handlers.py:459
+#: action_handlers/subscribe_handlers.py:460
 msgid "Invalid subscription. Please try again."
 msgstr "Տարածքը չի գտնվել։ Խնդրում ենք փորձել կրկին։"
 
-#: action_handlers/subscribe_handlers.py:473
+#: action_handlers/subscribe_handlers.py:474
 msgid "You have unsubscribed from {}, {}."
 msgstr "Դուք դադարեցրել եք բաժանորդագրությունը {}, {}։"
 
-#: action_handlers/subscribe_handlers.py:477
+#: action_handlers/subscribe_handlers.py:478
 msgid "Subscription not found or already removed."
 msgstr "Բաժանորդագրությունը չի գտնվել կամ արդեն հեռացված է։"
 
 #: post_handlers/emergency_power.py:24
 msgid "House Numbers: {}\n"
-msgstr ""
+msgstr "Տնային համարներ՝ {}\n"
 
 #: post_handlers/emergency_power.py:97
 msgid "Emergency power outage"

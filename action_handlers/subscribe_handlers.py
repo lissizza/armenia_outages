@@ -297,6 +297,7 @@ async def handle_keyword(update: Update, context: CallbackContext) -> int:
 
         await save_subscription(user, keyword, area_id, update, session)
 
+    context.user_data.clear()
     return ConversationHandler.END
 
 
