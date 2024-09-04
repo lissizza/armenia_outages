@@ -61,18 +61,18 @@ def lingva_translate(text, source_lang="hy", target_lang=None):
         return text
 
 
-def normalize_and_translate_value(value, target_language=None):
+def normalize_text(value):
     """
-    Normalize and optionally translate the input value.
+    Normalize the input value by applying Unicode normalization and
+    converting to uppercase.
 
-    Handles normalization for different types of input (strings, enums) and applies translation
-    for strings if a target language is specified.
+    Handles different input types (strings, enums) and removes extra spaces.
     """
     # Handle None input
     if value is None:
         return ""
 
-    # Normalize based on type
+    # Convert Enums to their name representation or ensure the value is a string
     if isinstance(value, Enum):
         value = value.name.upper()
     else:
@@ -82,7 +82,20 @@ def normalize_and_translate_value(value, target_language=None):
     value = unicodedata.normalize("NFC", value)
     value = re.sub(r"\s+", " ", value)  # Replace multiple spaces with a single space
 
-    # Direct corrections for known incorrect translations
+    return value
+
+
+def normalize_and_translate_value(value, target_language=None):
+    """
+    Normalize and optionally translate the input value.
+
+    Applies normalization and corrections for common mistakes, then translates
+    if a target language is specified.
+    """
+    # Normalize the value
+    value = normalize_text(value)
+
+    # Apply corrections specific to translation
     corrections = {
         "ШАРК": "РЯД",
         "SHARQ": "ROW",
@@ -90,7 +103,6 @@ def normalize_and_translate_value(value, target_language=None):
         "MIKROSHRDJAN": "MICRODISTRICT",
     }
 
-    # Apply corrections if the value is a string and corrections exist for it
     if isinstance(value, str):
         for wrong, correct in corrections.items():
             if wrong in value:

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-09-04 09:22+0000\n"
+"POT-Creation-Date: 2024-09-04 11:02+0000\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,37 +18,21 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.12.1\n"
 
-#: handle_posts.py:188
-msgid "Emergency power outage"
-msgstr ""
-
-#: handle_posts.py:358
-msgid "Scheduled power outage"
-msgstr ""
-
-#: handle_posts.py:504
-msgid "Scheduled water outage"
-msgstr ""
-
-#: handle_posts.py:506 tests/test_handle_posts.py:139
-msgid "Emergency water outage"
-msgstr ""
-
 #: action_handlers/handlers.py:40
 msgid ""
 "Hello {}! I am a bot that tracks water and power outages. Choose your "
 "language:"
 msgstr ""
 
-#: action_handlers/handlers.py:68 action_handlers/handlers.py:70
+#: action_handlers/handlers.py:71 action_handlers/handlers.py:74
 msgid "Language has been set to {}"
 msgstr ""
 
-#: action_handlers/handlers.py:76 action_handlers/handlers.py:88
+#: action_handlers/handlers.py:80 action_handlers/handlers.py:92
 msgid "An error occurred. Please try again."
 msgstr ""
 
-#: action_handlers/handlers.py:86
+#: action_handlers/handlers.py:90
 msgid "Invalid language code"
 msgstr ""
 
@@ -149,6 +133,22 @@ msgstr ""
 
 #: action_handlers/subscribe_handlers.py:477
 msgid "Subscription not found or already removed."
+msgstr ""
+
+#: post_handlers/emergency_power.py:24
+msgid "House Numbers: {}\n"
+msgstr ""
+
+#: post_handlers/emergency_power.py:97
+msgid "Emergency power outage"
+msgstr ""
+
+#: post_handlers/planned_power.py:133
+msgid "Scheduled power outage"
+msgstr ""
+
+#: tests/test_handle_posts.py:142
+msgid "Emergency water outage"
 msgstr ""
 
 #~ msgid "Scheduled water outage"

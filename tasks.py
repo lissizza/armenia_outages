@@ -3,7 +3,8 @@ from datetime import datetime
 import logging
 from telegram.error import RetryAfter, TimedOut, NetworkError
 from telegram.ext import CallbackContext
-from handle_posts import generate_emergency_power_posts, generate_water_posts
+from post_handlers.emergency_power import generate_emergency_power_posts
+from post_handlers.water import generate_water_posts
 from db import Session
 from models import Post, PostType
 from parsers.power_parser import parse_emergency_power_events

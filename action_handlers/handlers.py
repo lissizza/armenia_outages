@@ -5,8 +5,8 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from telegram.error import Forbidden
 from models import Language
-from user_logic import (
-    get_or_create_user,
+from orm import get_or_create_user
+from orm import (
     update_or_create_user,
 )
 from utils import get_translation
@@ -58,14 +58,18 @@ async def set_language(update: Update, context: CallbackContext) -> None:
     try:
         language = Language.from_code(language_code)
         logger.info(f"Setting language for user {telegram_id} to {language}")
-        
+
         with session_scope() as session:
-            user = await update_or_create_user(query.from_user, language=language, session=session)
+            user = await update_or_create_user(
+                query.from_user, language=language, session=session
+            )
             user = session.merge(user)
 
             if user:
                 _ = translations[user.language.name]
-                await query.answer(_("Language has been set to {}").format(language_code))
+                await query.answer(
+                    _("Language has been set to {}").format(language_code)
+                )
                 await query.edit_message_text(
                     _("Language has been set to {}").format(language_code)
                 )
@@ -86,4 +90,3 @@ async def set_language(update: Update, context: CallbackContext) -> None:
                 await query.answer(_("Invalid language code"))
             else:
                 await query.answer(_("An error occurred. Please try again."))
-

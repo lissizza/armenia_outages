@@ -21,9 +21,9 @@ from action_handlers.handlers import safe_reply_text
 from db import session_scope
 from utils import lingva_translate
 from models import BotUser, Subscription, Area, Language
-from user_logic import get_or_create_user
+from orm import get_or_create_user
 from utils import detect_language_by_charset, get_translation
-from handle_posts import get_or_create_area
+from orm import get_or_create_area
 from langdetect import detect, LangDetectException
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,8 @@
 import pytest
 from datetime import datetime, timedelta
 from models import Event, EventType, Language, Post, Area, post_event_association
-from handle_posts import generate_emergency_power_posts, generate_water_posts
+from post_handlers.emergency_power import generate_emergency_power_posts
+from post_handlers.water import generate_water_posts
 from utils import escape_markdown_v2, get_translation
 
 
@@ -94,13 +95,15 @@ async def test_generate_emergency_power_posts(test_session):
 
 @pytest.mark.asyncio
 async def test_generate_water_posts(test_session):
-    area_name_hy = "Աբովյան"
-    area_name_ru = "Абовян"
-    area_name_en = "Abovyan"
-
-    test_area = Area(name=area_name_hy, language=Language.HY)
-    test_session.add(test_area)
-    test_session.commit()
+    areas = {
+        Language.EN: "Abovyan",
+        Language.RU: "Абовян",
+        Language.HY: "Աբովյան",
+    }
+    for language, area_name in areas.items():
+        test_area = Area(name=area_name, language=language)
+        test_session.add(test_area)
+        test_session.commit()
 
     event_text_hy = (
         "Վթարային ջրանջատում Կոտայքի մարզի Աբովյան քաղաքում օգոստոսի 31-ին "
@@ -140,24 +143,15 @@ async def test_generate_water_posts(test_session):
 
         assert title in post.text
 
-        if post.language == Language.HY:
-            assert f"*{area_name_hy}*\n" in post.text
-        elif post.language == Language.RU:
-            assert f"*{area_name_ru}*\n" in post.text
-        elif post.language == Language.EN:
-            assert f"*{area_name_en}*\n" in post.text
+        area = test_session.query(Area).filter_by(name=areas[post.language]).first()
+        assert f"*{area.name}*\n" in post.text
 
-        assert "*31.08.2024 13:00-17:00*\n\n" in post.text
+        assert "*31\\.08\\.2024 13:00\\-17:00*\n\n" in post.text
 
         assert post.text.count(title) == 1
-        if post.language == Language.HY:
-            assert post.text.count(f"*{area_name_hy}*") == 1
-        elif post.language == Language.RU:
-            assert post.text.count(f"*{area_name_ru}*") == 1
-        elif post.language == Language.EN:
-            assert post.text.count(f"*{area_name_en}*") == 1
+        assert post.text.count(f"*{area.name}*") == 1
 
-        assert post.text.count("*31.08.2024 13:00-17:00*") == 1
+        assert post.text.count("*31\\.08\\.2024 13:00\\-17:00*") == 1
 
     test_session.query(post_event_association).delete()
     test_session.query(Post).delete()
