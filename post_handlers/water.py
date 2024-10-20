@@ -118,11 +118,11 @@ async def generate_water_posts(session):
                         f"No area matched for event {event.id} and language {language}"
                     )
 
-                translate = translations[language.name]
+                _ = translations[language.name]
                 title = (
-                    f"💧 {translate('Scheduled water outage')} 💧"
+                    f"💧 {_('Scheduled water outage')} 💧"
                     if event.planned
-                    else f"💧 {translate('Emergency water outage')} 💧"
+                    else f"💧 {_('Emergency water outage')} 💧"
                 )
 
                 area_text = f"*{escape_markdown_v2(area.name)}*\n" if area else ""

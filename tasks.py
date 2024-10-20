@@ -1,12 +1,12 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from telegram.error import RetryAfter, TimedOut, NetworkError
 from telegram.ext import CallbackContext
 from post_handlers.emergency_power import generate_emergency_power_posts
 from post_handlers.water import generate_water_posts
 from db import Session
-from models import Post, PostType
+from models import Event, Post, PostType
 from parsers.power_parser import parse_emergency_power_events
 from parsers.water_parser import parse_water_events
 from utils import get_channel_id
@@ -120,5 +120,22 @@ async def update_and_create_water_posts(context: CallbackContext) -> None:
 
         logger.info("Creating water posts...")
         await generate_water_posts(session)
+    finally:
+        session.close()
+
+
+async def clean_old_events(context: CallbackContext) -> None:
+    logger.info("Starting cleanup of outdated events from the database.")
+    session = Session()
+    try:
+        three_days_ago = datetime.now() - timedelta(days=3)
+        deleted_count = (
+            session.query(Event).filter(Event.timestamp < three_days_ago).delete()
+        )
+        session.commit()
+        logger.info(f"Deleted {deleted_count} outdated events from the database.")
+    except Exception as e:
+        logger.error(f"Error during cleanup of outdated events: {e}")
+        session.rollback()
     finally:
         session.close()
