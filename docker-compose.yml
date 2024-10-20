@@ -4,6 +4,7 @@ services:
   bot:
     build:
       context: .
+    mem_limit: 1g
     environment:
       - DEBUG=true
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
@@ -14,13 +15,13 @@ services:
     volumes:
       - .:/app
     depends_on:
-      db:
+      armenia-db:
         condition: service_healthy
-      db-test:
+      armenia-db-test:
         condition: service_healthy
     command: sleep infinity
 
-  db:
+  armenia-db:
     image: postgres:16
     environment:
       POSTGRES_DB: armenia_outages
@@ -36,7 +37,7 @@ services:
       timeout: 5s
       retries: 5
 
-  db-test:
+  armenia-db-test:
     image: postgres:16
     environment:
       POSTGRES_DB: test_db
@@ -51,6 +52,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+networks:
+  outages-network:
+    driver: bridge
 
 volumes:
   pgdata:

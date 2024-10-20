@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 import logging
+import re
 from bs4 import BeautifulSoup
 import aiohttp
 from db import Session
@@ -9,6 +10,32 @@ from models import Event, EventType, Language
 from config import WATER_OUTAGE_URL
 
 logger = logging.getLogger(__name__)
+
+
+def filter_by_date(text):
+    """
+    Extracts the date from the end of the `text` string and compares it with the current date.
+
+    :param text: The text of the event from which the date is extracted.
+    :return: True if the event is current, False otherwise.
+    """
+    # Assume the date is at the end of the text in the format "DD.MM.YYYY"
+    date_match = re.search(r"(\d{2}\.\d{2}\.\d{4})$", text)
+    if date_match:
+        event_date_str = date_match.group(1)
+        try:
+            event_date = datetime.strptime(event_date_str, "%d.%m.%Y").date()
+            current_date = datetime.now().date()
+            if event_date < current_date:
+                logger.info(f"Skipped outdated water event with date {event_date_str}")
+                return False
+            return True
+        except ValueError as e:
+            logger.error(f"Error parsing date '{event_date_str}': {e}")
+            return False
+    else:
+        logger.warning("Failed to extract date from water event text")
+        return False
 
 
 async def fetch_html(url):
@@ -51,6 +78,9 @@ async def parse_water_events(session):
 
         timestamp = datetime.now()
         planned = "Պլանային" in heading
+
+        if not filter_by_date(text) and not planned:
+            continue
 
         event_am = Event(
             event_type=EventType.WATER,

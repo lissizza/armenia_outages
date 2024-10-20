@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-09-04 15:18+0000\n"
+"POT-Creation-Date: 2024-09-06 07:30+0000\n"
 "PO-Revision-Date: 2024-08-07 13:00+0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -136,7 +136,9 @@ msgid "Subscription not found or already removed."
 msgstr ""
 
 #: post_handlers/emergency_power.py:24
-msgid "House Numbers: {}\n"
+msgid ""
+"House Numbers: {}\n"
+"\n"
 msgstr ""
 
 #: post_handlers/emergency_power.py:97
@@ -147,10 +149,11 @@ msgstr ""
 msgid "Scheduled power outage"
 msgstr ""
 
-#: tests/test_handle_posts.py:142
-msgid "Emergency water outage"
+#: post_handlers/water.py:123
+msgid "Scheduled water outage"
 msgstr ""
 
-#~ msgid "Scheduled water outage"
-#~ msgstr ""
+#: post_handlers/water.py:125 tests/test_handle_posts.py:142
+msgid "Emergency water outage"
+msgstr ""
 

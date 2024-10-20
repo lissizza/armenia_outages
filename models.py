@@ -56,8 +56,8 @@ class PostType(PyEnum):
 post_event_association = Table(
     "post_event_association",
     Base.metadata,
-    Column("post_id", ForeignKey("posts.id"), primary_key=True),
-    Column("event_id", ForeignKey("events.id"), primary_key=True),
+    Column("post_id", ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True),
+    Column("event_id", ForeignKey("events.id", ondelete="CASCADE"), primary_key=True),
 )
 
 
@@ -128,6 +128,7 @@ class Subscription(Base):
 
     user = relationship("BotUser", back_populates="subscriptions")
     area = relationship("Area", back_populates="subscriptions")
+    notifications = relationship("Notification", back_populates="subscription")
 
     __table_args__ = (
         UniqueConstraint("user_id", "area_id", "keyword", name="_user_area_keyword_uc"),
@@ -152,3 +153,17 @@ class Post(Base):
         cascade="all, delete",
     )
     area = relationship("Area", back_populates="posts")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True)
+    subscription_id = Column(Integer, ForeignKey("subscriptions.id"), nullable=False)
+    language = Column(Enum(Language), nullable=False)
+    notification_type = Column(Enum(PostType), nullable=False)
+    text = Column(String, nullable=False)
+    creation_time = Column(DateTime, default=datetime.now)
+    sent_time = Column(DateTime, nullable=True)
+
+    subscription = relationship("Subscription", back_populates="notifications")

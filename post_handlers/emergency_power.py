@@ -19,9 +19,9 @@ def generate_house_numbers_section(house_numbers, translate):
             hn.strip() for hn in house_numbers.split(",") if hn.strip()
         ]
         sorted_house_numbers = sorted(house_numbers_list, key=natural_sort_key)
-        house_numbers = ", ".join(sorted_house_numbers)
+        house_numbers = escape_markdown_v2(", ".join(sorted_house_numbers)).strip()
 
-        return _("House Numbers: {}\n").format(house_numbers)
+        return _("House Numbers: {}\n\n").format(house_numbers)
     return ""
 
 
@@ -107,15 +107,24 @@ async def generate_emergency_power_posts(session):
             sorted_events = sorted(events_group, key=lambda e: e["district"] or "")
 
             for event in sorted_events:
-                formatted_district = f"{escape_markdown_v2(event['district'].strip())}\n" if event["district"] else ""
-                formatted_house_numbers = f"{generate_house_numbers_section(
-                    escape_markdown_v2(event['house_numbers']), _
-                ).strip()}\n" if event["house_numbers"] else ""
+                formatted_district = (
+                    f"{escape_markdown_v2(event['district'].strip())}\n"
+                    if event["district"]
+                    else ""
+                )
+                formatted_house_numbers = generate_house_numbers_section(
+                    event["house_numbers"], _
+                )
                 event_message = f"{formatted_district}{formatted_house_numbers}\n"
 
                 if len(post_text) + len(event_message) > 4096:
                     await save_post_to_db(
-                        session, PostType.EMERGENCY_POWER, post_text, all_event_ids, language, db_area
+                        session,
+                        PostType.EMERGENCY_POWER,
+                        post_text,
+                        all_event_ids,
+                        language,
+                        db_area,
                     )
                     post_text = (
                         f"*{title}*\n{formatted_area}\n{formatted_time}\n"
@@ -128,7 +137,12 @@ async def generate_emergency_power_posts(session):
 
             if post_text:
                 await save_post_to_db(
-                    session, PostType.EMERGENCY_POWER, post_text, all_event_ids, language, db_area
+                    session,
+                    PostType.EMERGENCY_POWER,
+                    post_text,
+                    all_event_ids,
+                    language,
+                    db_area,
                 )
 
             await loop.run_in_executor(

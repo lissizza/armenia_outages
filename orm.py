@@ -31,6 +31,9 @@ async def save_post_to_db(session, post_type, text, event_ids, language, area):
 
 
 async def clean_area_name(raw_name):
+    """
+    Cleans the area name by removing common prefixes and trimming extra spaces.
+    """
     prefixes = [
         "г.",
         "город",
@@ -50,6 +53,7 @@ async def clean_area_name(raw_name):
         "Ս.",
     ]
 
+    # Check and remove prefixes
     for prefix in prefixes:
         if raw_name.startswith(prefix):
             raw_name = raw_name[len(prefix) :].strip()
@@ -58,9 +62,10 @@ async def clean_area_name(raw_name):
             raw_name = raw_name.split(".")[1].strip()
             break
 
+    # Remove any extra parts in parentheses and capitalize the result
     cleaned_name = raw_name.split("(")[0].strip()
 
-    return cleaned_name.capitalize()
+    return cleaned_name.capitalize() if cleaned_name else ""
 
 
 async def get_or_create_area(
@@ -74,7 +79,14 @@ async def get_or_create_area(
     :param language: The language of the area.
     :return: The Area instance.
     """
+    # Clean the area name
     area_name = await clean_area_name(area_name)
+
+    # Skip or handle empty area names
+    if not area_name:
+        logger.warning("Area name is empty after cleaning. Skipping area creation.")
+        return None  # Or you could provide a default value here
+
     loop = asyncio.get_event_loop()
 
     # Check if the area already exists
