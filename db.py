@@ -1,34 +1,33 @@
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 import logging
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import declarative_base, sessionmaker
 from config import DB_URI
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO
 )
-# logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
-engine = create_engine(
+engine = create_async_engine(
     DB_URI,
     echo=False,
     pool_pre_ping=True,
     connect_args={"options": "-c statement_timeout=60000"},
-    future=True,
 )
-Session = sessionmaker(bind=engine)
+async_session = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
 
-def init_db():
-    Base.metadata.create_all(engine)
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
-@contextmanager
-def session_scope(session=None):
+@asynccontextmanager
+async def session_scope(session=None):
+    """Provide a transactional scope around a series of operations."""
     if session is None:
-        session = Session()
+        session = async_session()
         is_new_session = True
     else:
         is_new_session = False
@@ -36,11 +35,11 @@ def session_scope(session=None):
     try:
         yield session
         if is_new_session:
-            session.commit()
+            await session.commit()
     except Exception:
         if is_new_session:
-            session.rollback()
+            await session.rollback()
         raise
     finally:
         if is_new_session:
-            session.close()
+            await session.close()
