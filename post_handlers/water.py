@@ -132,8 +132,9 @@ async def generate_water_posts(session):
                     if formatted_date_time
                     else ""
                 )
-                escaped_text = escape_markdown_v2(content)
-                post_text = f"*{title}*\n\n{area_text}{date_time_text}\n{escaped_text}"
+                escaped_header = escape_markdown_v2(header)
+                escaped_text = escape_markdown_v2(text)
+                post_text = f"*{title}*\n\n{area_text}{date_time_text}\n{escaped_header}\n\n{escaped_text}"
 
                 await save_post_to_db(
                     session,

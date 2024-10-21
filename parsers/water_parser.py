@@ -19,8 +19,8 @@ def filter_by_date(text):
     :param text: The text of the event from which the date is extracted.
     :return: True if the event is current, False otherwise.
     """
-    # Assume the date is at the end of the text in the format "DD.MM.YYYY"
-    date_match = re.search(r"(\d{2}\.\d{2}\.\d{4})$", text)
+
+    date_match = re.search(r"(\d{2}\.\d{2}\.\d{4})թ?\.$", text)
     if date_match:
         event_date_str = date_match.group(1)
         try:
