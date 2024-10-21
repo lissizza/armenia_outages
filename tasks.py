@@ -124,18 +124,35 @@ async def update_and_create_water_posts(context: CallbackContext) -> None:
         session.close()
 
 
-async def clean_old_events(context: CallbackContext) -> None:
+async def cleanup_outdated_events(context: CallbackContext) -> None:
     logger.info("Starting cleanup of outdated events from the database.")
     session = Session()
     try:
-        three_days_ago = datetime.now() - timedelta(days=3)
-        deleted_count = (
-            session.query(Event).filter(Event.timestamp < three_days_ago).delete()
-        )
-        session.commit()
-        logger.info(f"Deleted {deleted_count} outdated events from the database.")
+        threshold_time = datetime.now() - timedelta(days=3)
+
+        while True:
+            outdated_events = (
+                session.query(Event)
+                .filter(Event.timestamp < threshold_time)
+                .limit(1000)
+                .all()
+            )
+
+            if not outdated_events:
+                break
+
+            event_ids = [event.id for event in outdated_events]
+
+            session.query(Event).filter(Event.id.in_(event_ids)).delete(
+                synchronize_session=False
+            )
+            session.commit()
+
+            logger.info(f"Deleted {len(outdated_events)} outdated events.")
+
+        logger.info("Cleanup of outdated events completed successfully.")
     except Exception as e:
-        logger.error(f"Error during cleanup of outdated events: {e}")
         session.rollback()
+        logger.error(f"Error during cleanup of outdated events: {e}")
     finally:
         session.close()

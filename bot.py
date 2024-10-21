@@ -30,7 +30,7 @@ from action_handlers.subscribe_handlers import (
     unsubscribe_callback,
 )
 from tasks import (
-    clean_old_events,
+    cleanup_outdated_events,
     send_emergency_power_posts,
     send_water_posts,
     update_and_create_power_posts,
@@ -127,7 +127,9 @@ async def main() -> None:
         periodic_task(POST_UPDATES_INTERVAL, send_emergency_power_posts, context)
     )
     asyncio.create_task(periodic_task(POST_UPDATES_INTERVAL, send_water_posts, context))
-    asyncio.create_task(periodic_task(THREE_DAYS_IN_SECONDS, clean_old_events, context))
+    asyncio.create_task(
+        periodic_task(THREE_DAYS_IN_SECONDS, cleanup_outdated_events, context)
+    )
 
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
