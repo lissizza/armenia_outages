@@ -82,7 +82,7 @@ async def periodic_task(interval, task_func, context: CallbackContext):
 
 
 async def main() -> None:
-    init_db()
+    await init_db()
     limits = httpx.Limits(max_keepalive_connections=50, max_connections=100)
     timeout = httpx.Timeout(20.0)
 

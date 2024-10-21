@@ -1,6 +1,5 @@
-import asyncio
 import logging
-from sqlalchemy import String, func
+from sqlalchemy import String, func, select, update
 from utils import escape_markdown_v2, get_translation, natural_sort_key
 from models import Event, EventType, PostType
 from orm import get_or_create_area, save_post_to_db
@@ -27,40 +26,33 @@ def generate_house_numbers_section(house_numbers, translate):
 
 async def generate_emergency_power_posts(session):
     try:
-        loop = asyncio.get_event_loop()
-
-        grouped_events = await loop.run_in_executor(
-            None,
-            lambda: (
-                session.query(
-                    Event.start_time,
-                    Event.area,
-                    Event.district,
-                    Event.language,
-                    Event.event_type,
-                    func.string_agg(func.cast(Event.id, String), ",").label(
-                        "event_ids"
-                    ),
-                    func.string_agg(Event.house_number, ", ").label("house_numbers"),
-                )
-                .filter(
-                    Event.processed.is_(False),
-                    Event.event_type == EventType.POWER,
-                    Event.planned.is_(False),
-                    (Event.area.isnot(None))
-                    | (Event.district.isnot(None))
-                    | (Event.house_number.isnot(None)),
-                )
-                .group_by(
-                    Event.start_time,
-                    Event.area,
-                    Event.district,
-                    Event.language,
-                    Event.event_type,
-                )
-                .all()
-            ),
+        grouped_events = await session.execute(
+            select(
+                Event.start_time,
+                Event.area,
+                Event.district,
+                Event.language,
+                Event.event_type,
+                func.string_agg(func.cast(Event.id, String), ",").label("event_ids"),
+                func.string_agg(Event.house_number, ", ").label("house_numbers"),
+            )
+            .filter(
+                Event.processed.is_(False),
+                Event.event_type == EventType.POWER,
+                Event.planned.is_(False),
+                (Event.area.isnot(None))
+                | (Event.district.isnot(None))
+                | (Event.house_number.isnot(None)),
+            )
+            .group_by(
+                Event.start_time,
+                Event.area,
+                Event.district,
+                Event.language,
+                Event.event_type,
+            )
         )
+        grouped_events = grouped_events.all()
 
         logger.info(
             f"Found {len(grouped_events)} grouped unprocessed emergency power events."
@@ -69,7 +61,7 @@ async def generate_emergency_power_posts(session):
         posts_by_area_and_time = {}
 
         for group in grouped_events:
-            event_ids = group.event_ids.split(",")
+            event_ids = [int(event_id) for event_id in group.event_ids.split(",")]
             logger.info(f"Processing group with event IDs: {event_ids}")
 
             group_key = (group.area, group.start_time, group.language)
@@ -145,17 +137,17 @@ async def generate_emergency_power_posts(session):
                     db_area,
                 )
 
-            await loop.run_in_executor(
-                None,
-                lambda: session.query(Event)
-                .filter(Event.id.in_(all_event_ids))
-                .update({"processed": True}, synchronize_session=False),
+            await session.execute(
+                update(Event)
+                .where(Event.id.in_(all_event_ids))
+                .values(processed=True)
+                .execution_options(synchronize_session=False)
             )
 
-        session.commit()
+        await session.commit()
         logger.info("All posts have been saved to the database.")
 
     except Exception as e:
-        session.rollback()
+        await session.rollback()
         logger.error(f"Error while processing events and generating posts: {e}")
         raise

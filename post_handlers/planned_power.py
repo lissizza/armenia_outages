@@ -3,7 +3,6 @@ import json
 import logging
 
 import openai
-from db import Session
 from utils import escape_markdown_v2, get_translation
 from models import Language, PostType
 from orm import get_or_create_area, save_post_to_db
@@ -113,9 +112,7 @@ Now, please parse the following text:
             return parsed_data
 
 
-async def generate_planned_power_post(parsed_event, original_event_id):
-    session = Session()
-
+async def generate_planned_power_post(session, parsed_event, original_event_id):
     logger.debug(f"Processing parsed event: {parsed_event}")
 
     try:
@@ -162,5 +159,3 @@ async def generate_planned_power_post(parsed_event, original_event_id):
     except Exception as e:
         logger.error(f"Error while processing parsed event: {e}")
         session.rollback()
-    finally:
-        session.close()

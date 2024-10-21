@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 import logging
+from sqlalchemy.future import select
 from telegram.error import RetryAfter, TimedOut, NetworkError
 from telegram.ext import CallbackContext
 from post_handlers.emergency_power import generate_emergency_power_posts
@@ -19,14 +20,15 @@ MESSAGE_DELAY = 2  # seconds
 async def send_emergency_power_posts(context: CallbackContext) -> None:
     logger.info("Sending unsent power posts...")
     async with session_scope() as session:
-        unsent_emergency_power_posts = await session.execute(
-            session.query(Post)
+        result = await session.execute(
+            select(Post)
             .filter(
-                Post.posted_time.is_(None), Post.post_type == PostType.EMERGENCY_POWER
+                Post.posted_time.is_(None),
+                Post.post_type == PostType.EMERGENCY_POWER,
             )
             .order_by(Post.creation_time)
         )
-        unsent_emergency_power_posts = unsent_emergency_power_posts.scalars().all()
+        unsent_emergency_power_posts = result.scalars().all()
 
         for post in unsent_emergency_power_posts:
             result = await send_post_to_channel(context, post, session)
@@ -39,8 +41,8 @@ async def send_emergency_power_posts(context: CallbackContext) -> None:
 async def send_water_posts(context: CallbackContext) -> None:
     logger.info("Sending unsent water posts...")
     async with session_scope() as session:
-        unsent_posts = await session.execute(
-            session.query(Post)
+        result = await session.execute(
+            select(Post)
             .filter(
                 Post.posted_time.is_(None),
                 Post.post_type.in_(
@@ -49,7 +51,7 @@ async def send_water_posts(context: CallbackContext) -> None:
             )
             .order_by(Post.creation_time)
         )
-        unsent_posts = unsent_posts.scalars().all()
+        unsent_posts = result.scalars().all()
 
         for post in unsent_posts:
             result = await send_post_to_channel(context, post, session)
@@ -122,24 +124,26 @@ async def cleanup_outdated_events(context: CallbackContext) -> None:
             threshold_time = datetime.now() - timedelta(days=3)
 
             while True:
-                outdated_events = await session.execute(
-                    session.query(Event)
-                    .filter(Event.timestamp < threshold_time)
-                    .limit(1000)
+                logger.info("Executing select query to find outdated events.")
+                result = await session.execute(
+                    select(Event).filter(Event.timestamp < threshold_time).limit(1000)
                 )
-                outdated_events = outdated_events.scalars().all()
+                outdated_events = result.scalars().all()
+
+                logger.info(f"Found {len(outdated_events)} outdated events.")
 
                 if not outdated_events:
+                    logger.info("No more outdated events to delete.")
                     break
 
                 event_ids = [event.id for event in outdated_events]
-                await session.execute(
-                    session.query(Event)
-                    .filter(Event.id.in_(event_ids))
-                    .delete(synchronize_session=False)
-                )
-                await session.commit()
+                logger.info(f"Deleting {len(event_ids)} events.")
 
+                await session.execute(
+                    Event.__table__.delete().where(Event.id.in_(event_ids))
+                )
+
+                await session.commit()
                 logger.info(f"Deleted {len(outdated_events)} outdated events.")
 
             logger.info("Cleanup of outdated events completed successfully.")

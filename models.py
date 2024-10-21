@@ -4,6 +4,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Enum,
@@ -114,7 +115,10 @@ class Event(Base):
         "Post", secondary=post_event_association, back_populates="events"
     )
 
-    __table_args__ = (UniqueConstraint("hash", name="_event_hash_uc"),)
+    __table_args__ = (
+        UniqueConstraint("hash", name="_event_hash_uc"),
+        Index("idx_events_timestamp", "timestamp"),
+    )
 
 
 class Subscription(Base):

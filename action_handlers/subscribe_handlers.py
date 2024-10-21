@@ -21,9 +21,9 @@ from action_handlers.handlers import safe_reply_text
 from db import session_scope
 from utils import lingva_translate
 from models import BotUser, Subscription, Area, Language
-from orm import get_or_create_user
+from orm import get_or_create_user, get_or_create_area
+from sqlalchemy.future import select
 from utils import detect_language_by_charset, get_translation
-from orm import get_or_create_area
 from langdetect import detect, LangDetectException
 
 logger = logging.getLogger(__name__)
@@ -44,18 +44,15 @@ def detect_language(text):
 
 
 async def subscribe(update: Update, context: CallbackContext) -> int:
-    with session_scope() as session:
+    async with session_scope() as session:
         user = await get_or_create_user(update.effective_user, session=session)
-        user = session.merge(user)
         _ = translations[user.language.name]
 
         logger.info(f"User {user.username} issued /subscribe command")
-        areas = (
-            session.query(Area)
-            .filter_by(language=user.language)
-            .order_by(Area.name)
-            .all()
+        result = await session.execute(
+            select(Area).filter_by(language=user.language).order_by(Area.name)
         )
+        areas = result.scalars().all()
 
         if not areas:
             logger.warning("No areas found in the database.")
@@ -91,19 +88,18 @@ async def select_letter(update: Update, context: CallbackContext) -> int:
 
     selected_letter = query.data.split("_")[1]
 
-    with session_scope() as session:
+    async with session_scope() as session:
         user = await get_or_create_user(query.from_user, session=session)
-        user = session.merge(user)
         _ = translations[user.language.name]
 
-        areas = (
-            session.query(Area)
+        result = await session.execute(
+            select(Area)
             .filter(
                 Area.language == user.language, Area.name.ilike(f"{selected_letter}%")
             )
             .order_by(Area.name)
-            .all()
         )
+        areas = result.scalars().all()
 
         if not areas:
             await query.edit_message_text(
@@ -149,9 +145,8 @@ async def ask_new_area(update: Update, context: CallbackContext) -> int:
 async def handle_area(update: Update, context: CallbackContext) -> int:
     user_input = update.message.text.strip()
 
-    with session_scope() as session:
+    async with session_scope() as session:
         user = await get_or_create_user(update.effective_user, session=session)
-        user = session.merge(user)
         _ = translations[user.language.name]
 
         if not re.match(r"^[a-zA-Zа-яА-ЯёЁ\s]+$", user_input):
@@ -190,17 +185,17 @@ async def select_area(update: Update, context: CallbackContext) -> int:
     if data.startswith("letter_"):
         first_letter = data.split("_")[1].upper()
 
-        with session_scope() as session:
+        async with session_scope() as session:
             user = await get_or_create_user(query.from_user, session=session)
             _ = translations[user.language.name]
 
-            areas = (
-                session.query(Area)
+            result = await session.execute(
+                select(Area)
                 .filter_by(language=user.language)
                 .filter(Area.name.ilike(f"{first_letter}%"))
                 .order_by(Area.name)
-                .all()
             )
+            areas = result.scalars().all()
 
             keyboard = [
                 [InlineKeyboardButton(area.name, callback_data=str(area.id))]
@@ -226,11 +221,12 @@ async def select_area(update: Update, context: CallbackContext) -> int:
 
     else:
         area_id = int(data)
-        with session_scope() as session:
+        async with session_scope() as session:
             user = await get_or_create_user(query.from_user, session=session)
             _ = translations[user.language.name]
 
-            area = session.query(Area).filter_by(id=area_id).first()
+            result = await session.execute(select(Area).filter_by(id=area_id))
+            area = result.scalars().first()
 
             if area:
                 context.user_data["selected_area"] = area.id
@@ -244,10 +240,6 @@ async def select_area(update: Update, context: CallbackContext) -> int:
 
 
 async def ask_for_keyword(update: Update, context: CallbackContext, session) -> int:
-    """
-    Asks the user to provide a keyword to subscribe to.
-    Handles both callback queries and regular messages.
-    """
     user = await get_or_create_user(update.effective_user, session=session)
     _ = translations[user.language.name]
 
@@ -267,9 +259,8 @@ async def ask_for_keyword(update: Update, context: CallbackContext, session) -> 
 async def handle_keyword(update: Update, context: CallbackContext) -> int:
     keyword = update.message.text.strip()
 
-    with session_scope() as session:
+    async with session_scope() as session:
         user = await get_or_create_user(update.effective_user, session=session)
-        user = session.merge(user)
         _ = translations[user.language.name]
 
         detected_language = detect_language_by_charset(keyword)
@@ -304,19 +295,17 @@ async def handle_keyword(update: Update, context: CallbackContext) -> int:
 async def save_subscription(
     user: BotUser, keyword: str, area_id: int, update: Update, session
 ) -> None:
-    """
-    Saves the subscription to the database.
-    """
     _ = translations[user.language.name]
 
     try:
         logger.info(f"Saving subscription for user {user.user_id}")
 
-        existing_subscription = (
-            session.query(Subscription)
-            .filter_by(user_id=user.user_id, area_id=area_id, keyword=keyword)
-            .first()
+        result = await session.execute(
+            select(Subscription).filter_by(
+                user_id=user.user_id, area_id=area_id, keyword=keyword
+            )
         )
+        existing_subscription = result.scalars().first()
 
         if existing_subscription:
             logger.warning(
@@ -334,7 +323,7 @@ async def save_subscription(
             user_id=user.user_id, keyword=keyword, area_id=area_id
         )
         session.add(subscription)
-        session.commit()
+        await session.commit()
 
         logger.info(f"Subscription saved: {user.user_id} -> {keyword}")
         await safe_reply_text(
@@ -366,12 +355,12 @@ async def inline_query(update: Update, context: CallbackContext):
     if not query:
         return
 
-    with session_scope() as session:
+    async with session_scope() as session:
         user = await get_or_create_user(update.inline_query.from_user, session=session)
-        user = session.merge(user)
         _ = translations[user.language.name]
 
-        areas = session.query(Area).filter_by(language=user.language).all()
+        result = await session.execute(select(Area).filter_by(language=user.language))
+        areas = result.scalars().all()
 
         area_scores = [
             (area, jellyfish.jaro_winkler(query.lower(), area.name.lower()))
@@ -412,9 +401,8 @@ subscribe_handler = ConversationHandler(
 
 
 async def subscription_list(update: Update, context: CallbackContext) -> None:
-    with session_scope() as session:
+    async with session_scope() as session:
         user = await get_or_create_user(update.effective_user, session=session)
-        user = session.merge(user)
 
         if user is None:
             await update.message.reply_text(
@@ -424,9 +412,10 @@ async def subscription_list(update: Update, context: CallbackContext) -> None:
 
         _ = translations[user.language.name]
 
-        subscriptions = (
-            session.query(Subscription).filter_by(user_id=user.user_id).all()
+        result = await session.execute(
+            select(Subscription).filter_by(user_id=user.user_id)
         )
+        subscriptions = result.scalars().all()
 
         if subscriptions:
             for sub in subscriptions:
@@ -441,17 +430,15 @@ async def subscription_list(update: Update, context: CallbackContext) -> None:
         else:
             response_text = _("You have no subscriptions.")
 
-        if not subscriptions:
-            await safe_reply_text(update, response_text)
+        await safe_reply_text(update, response_text)
 
 
 async def unsubscribe_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
 
-    with session_scope() as session:
+    async with session_scope() as session:
         user = await get_or_create_user(query.from_user, session=session)
-        user = session.merge(user)
         _ = translations[user.language.name]
 
         try:
@@ -463,13 +450,16 @@ async def unsubscribe_callback(update: Update, context: CallbackContext) -> None
             )
             return
 
-        subscription = session.query(Subscription).filter_by(id=subscription_id).first()
+        result = await session.execute(
+            select(Subscription).filter_by(id=subscription_id)
+        )
+        subscription = result.scalars().first()
 
         if subscription:
             area_name = subscription.area.name
             keyword = subscription.keyword
-            session.delete(subscription)
-            session.commit()
+            await session.delete(subscription)
+            await session.commit()
             await query.edit_message_text(
                 text=_("You have unsubscribed from {}, {}.").format(area_name, keyword)
             )

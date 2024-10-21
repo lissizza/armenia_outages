@@ -12,7 +12,6 @@ engine = create_async_engine(
     DB_URI,
     echo=False,
     pool_pre_ping=True,
-    connect_args={"options": "-c statement_timeout=60000"},
 )
 async_session = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
@@ -25,7 +24,6 @@ async def init_db():
 
 @asynccontextmanager
 async def session_scope(session=None):
-    """Provide a transactional scope around a series of operations."""
     if session is None:
         session = async_session()
         is_new_session = True

@@ -4,8 +4,8 @@ import re
 from models import Area, Event, EventType, Language, PostType
 from orm import save_post_to_db
 from utils import escape_markdown_v2, get_translation, normalize_text, translate_text
-import asyncio
 from sqlite3 import IntegrityError
+from sqlalchemy.future import select
 
 logger = logging.getLogger(__name__)
 translations = get_translation()
@@ -16,9 +16,9 @@ async def find_area(session, header, language):
     Find the area name in the given header text using the language-specific area names.
     """
     normalized_header = normalize_text(header)
-    all_areas = await asyncio.get_event_loop().run_in_executor(
-        None, lambda: session.query(Area).filter_by(language=language).all()
-    )
+    all_areas = await session.execute(select(Area).filter_by(language=language))
+    all_areas = all_areas.scalars().all()
+
     for area in all_areas:
         if area.name.upper() in normalized_header:
             return area
@@ -83,16 +83,14 @@ def extract_date_time(text):
 
 
 async def generate_water_posts(session):
-    unprocessed_water_events = await asyncio.get_event_loop().run_in_executor(
-        None,
-        lambda: session.query(Event)
-        .filter(
+    unprocessed_water_events = await session.execute(
+        select(Event).filter(
             Event.processed.is_(False),
             Event.event_type == EventType.WATER,
             Event.language == Language.HY,
         )
-        .all(),
     )
+    unprocessed_water_events = unprocessed_water_events.scalars().all()
 
     for event in unprocessed_water_events:
         translation_ru, translation_en = await translate_text(event.text)
@@ -150,14 +148,14 @@ async def generate_water_posts(session):
                 )
 
             event.processed = True
-            session.commit()
+            await session.commit()
 
         except IntegrityError as e:
-            session.rollback()
+            await session.rollback()
             logger.error(
                 f"Failed to insert water event {event.id} due to IntegrityError: {e}"
             )
         except Exception as e:
-            session.rollback()
+            await session.rollback()
             logger.error(f"Failed to process water event {event.id}: {e}")
             raise
