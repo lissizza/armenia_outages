@@ -1,7 +1,7 @@
 from datetime import datetime
 import logging
 from models import EventType, Event, Notification, PostType, Subscription
-
+from sqlalchemy.future import select
 
 logger = logging.getLogger(__name__)
 
@@ -9,10 +9,14 @@ logger = logging.getLogger(__name__)
 async def create_notifications_for_subscribers(session) -> None:
     logger.info("Generating notifications for subscribers...")
 
-    subscriptions = session.query(Subscription).all()
+    result = await session.execute(select(Subscription))
+    subscriptions = result.scalars().all()
 
     for subscription in subscriptions:
-        events = session.query(Event).filter(Event.area == subscription.area.name).all()
+        result = await session.execute(
+            select(Event).filter(Event.area == subscription.area.name)
+        )
+        events = result.scalars().all()
 
         if subscription.keyword:
             events = [
@@ -43,4 +47,4 @@ async def create_notifications_for_subscribers(session) -> None:
                 f"Created notification for subscription ID {subscription.id} for event ID {event.id}"
             )
 
-    session.commit()
+    await session.commit()

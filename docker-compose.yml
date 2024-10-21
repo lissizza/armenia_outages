@@ -7,11 +7,6 @@ services:
     mem_limit: 1g
     environment:
       - DEBUG=true
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - OPENAI_AI_KEY=${OPENAI_AI_KEY}
-      - DATABASE_URL=${DATABASE_URL}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD} 
     volumes:
       - .:/app
     depends_on:
@@ -20,6 +15,8 @@ services:
       armenia-db-test:
         condition: service_healthy
     command: sleep infinity
+    env_file:
+      - .env
 
   armenia-db:
     image: postgres:16

@@ -4,10 +4,12 @@ import logging
 import re
 from bs4 import BeautifulSoup
 import aiohttp
-from db import Session
+from db import session_scope
 from utils import compute_hash_by_text
 from models import Event, EventType, Language
 from config import WATER_OUTAGE_URL
+from sqlalchemy.future import select
+
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +71,8 @@ async def parse_water_events(session):
 
         event_hash = compute_hash_by_text(text)
 
-        existing_event = session.query(Event).filter_by(hash=event_hash).first()
-        if existing_event:
+        existing_event = await session.execute(select(Event).filter_by(hash=event_hash))
+        if existing_event.scalars().first():
             logger.info(
                 f"Hash {event_hash} already exists in the database. Skipping event and stop parsing."
             )
@@ -102,10 +104,14 @@ async def parse_water_events(session):
 
     events.reverse()
     session.add_all(events)
-    session.commit()
+    await session.commit()
     logger.info(f"Added {new_records_count} new water events to the database.")
 
 
+async def main():
+    async with session_scope() as session:
+        await parse_water_events(session)
+
+
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(parse_water_events(Session()))
+    asyncio.run(main())

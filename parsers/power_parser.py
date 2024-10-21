@@ -7,6 +7,7 @@ from models import Event, EventType, Language
 from config import POWER_OUTAGE_URL
 import re
 from utils import compute_hash, normalize_and_translate_value
+from sqlalchemy.future import select
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +23,7 @@ def split_address(address):
 
     # Regular expression to check for valid house number patterns
     house_number_pattern = r"^[\dA-ZА-Яа-ֆ/\\\-.,]*\d+[\dA-ZА-Яа-ֆ/\\\-.,]*$"
-    number_letter_pattern = (
-        r"^\d+ [Ա-Ֆա-ֆ]$"  # Pattern for numbers followed by a single Armenian letter
-    )
+    number_letter_pattern = r"^\d+ [Ա-Ֆա-ֆ]$"
 
     # Additional check if the right part could be a house number with space and single letter
     if re.match(number_letter_pattern, right_part):
@@ -137,9 +136,11 @@ async def parse_emergency_power_events(db_session):
                     False,
                 )
 
-                existing_event = (
-                    db_session.query(Event).filter_by(hash=event_hash).first()
+                result = await db_session.execute(
+                    select(Event).filter_by(hash=event_hash)
                 )
+                existing_event = result.scalars().first()
+
                 if existing_event:
                     continue
 
@@ -158,10 +159,10 @@ async def parse_emergency_power_events(db_session):
                 db_session.add(new_event)
                 new_records_count += 1
 
-            await asyncio.get_event_loop().run_in_executor(None, db_session.commit)
+            await db_session.commit()
 
             logger.info(
-                f"Added {new_records_count} new records to the database for language {language}."
+                f"Added {new_records_count} new records to the database for language {language.name}."
             )
 
         except Exception as e:
@@ -195,4 +196,10 @@ async def parse_table(soup):
 
 
 if __name__ == "__main__":
-    asyncio.run(parse_emergency_power_events())
+    from db import session_scope
+
+    async def main():
+        async with session_scope() as db_session:
+            await parse_emergency_power_events(db_session)
+
+    asyncio.run(main())

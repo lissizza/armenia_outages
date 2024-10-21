@@ -33,7 +33,8 @@ Armenia Outages Watcher is a Telegram bot designed to monitor and notify users a
    OPENAI_AI_KEY=your_openai_key
    POSTGRES_USER=your_postgres_username
    POSTGRES_PASSWORD=your_postgres_password
-   DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/armenia_outages
+   DATABASE_URL=postgresql+asyncpg://your_user:your_password@db:5432/armenia_outages
+   SYNC_DATABASE_URL=postgresql+psycopg2://your_user:your_password@armenia-db:5432/armenia_outages
    POSTGRES_PORT=5432
    ```
 
