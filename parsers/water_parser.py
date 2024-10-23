@@ -82,6 +82,7 @@ async def parse_water_events(session):
         planned = "Պլանային" in heading
 
         if not filter_by_date(text) and not planned:
+            logger.info(f"Event in text '{heading}' was skipped due to date filter.")
             continue
 
         event_am = Event(
@@ -102,10 +103,13 @@ async def parse_water_events(session):
         events.append(event_am)
         new_records_count += 1
 
-    events.reverse()
-    session.add_all(events)
-    await session.commit()
-    logger.info(f"Added {new_records_count} new water events to the database.")
+    if events:
+        events.reverse()
+        session.add_all(events)
+        await session.commit()
+        logger.info(f"Added {new_records_count} new water events to the database.")
+    else:
+        logger.info("No new water events were found.")
 
 
 async def main():
